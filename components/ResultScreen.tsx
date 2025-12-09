@@ -9,7 +9,7 @@ interface ResultScreenProps {
   onRetake: () => void;
 }
 
-type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+type UploadStatus = 'idle' | 'uploading' | 'success' | 'error' | 'disabled';
 
 const BUCKET_NAME = 'fotototem'; // ajuste se usar outro nome de bucket
 
@@ -17,9 +17,15 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const [publicUrl, setPublicUrl] = useState<string | null>(null);
 
-  // Faz o upload automaticamente ao entrar na tela de resultado
+  // Faz o upload automaticamente ao entrar na tela de resultado (se supabase estiver configurado)
   useEffect(() => {
     const uploadImage = async () => {
+      if (!supabase) {
+        // Supabase não configurado: desabilita upload/QR
+        setUploadStatus('disabled');
+        return;
+      }
+
       setUploadStatus('uploading');
 
       // Converte dataURL para Blob
@@ -62,6 +68,19 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
     document.body.removeChild(link);
   };
 
+  const renderStatusText = () => {
+    if (uploadStatus === 'success') {
+      return 'Agora é só escanear para baixar.';
+    }
+    if (uploadStatus === 'error') {
+      return 'Não conseguimos gerar o link. Mas você pode baixar direto no PC.';
+    }
+    if (uploadStatus === 'disabled') {
+      return 'QR Code desativado (Supabase não configurado). Você ainda pode salvar a foto no PC.';
+    }
+    return 'Gerando link para você baixar pelo celular...';
+  };
+
   return (
     <div className="absolute inset-0 w-full h-full bg-globo-gradient flex items-center justify-center p-3 sm:p-6 lg:p-10 overflow-y-auto">
       <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center gap-8 lg:gap-16 xl:gap-20 animate-in fade-in slide-in-from-bottom-8 duration-500">
@@ -83,11 +102,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
               Ficou ótima! 🎉
             </h2>
             <p className="text-white/80 text-base sm:text-lg">
-              {uploadStatus === 'success'
-                ? 'Agora é só escanear para baixar.'
-                : uploadStatus === 'error'
-                ? 'Não conseguimos gerar o link. Mas você pode baixar direto no PC.'
-                : 'Gerando link para você baixar pelo celular...'}
+              {renderStatusText()}
             </p>
           </div>
 
@@ -117,6 +132,16 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
                   Aponte a câmera do seu celular para o QR Code para abrir a foto.
                 </p>
               </>
+            ) : uploadStatus === 'disabled' ? (
+              <div className="flex flex-col items-center gap-3 text-globo-text py-6">
+                <AlertCircle size={44} className="text-globo-textSec" />
+                <p className="text-sm sm:text-base font-bold text-center max-w-xs">
+                  QR Code desativado porque as variáveis do Supabase não estão configuradas.
+                </p>
+                <p className="text-xs sm:text-sm text-globo-textSec text-center max-w-xs">
+                  Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY para habilitar o QR, ou use apenas o botão de salvar no PC.
+                </p>
+              </div>
             ) : (
               <div className="flex flex-col items-center gap-3 text-globo-error py-6">
                 <AlertCircle size={44} />
