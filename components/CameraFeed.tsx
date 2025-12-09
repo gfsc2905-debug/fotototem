@@ -22,6 +22,70 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [countdownValue, setCountdownValue] = useState<number>(3);
 
+  // Função de captura (precisa vir antes do useEffect que a usa)
+  const captureImage = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Define output resolution (High Res)
+    const OUTPUT_WIDTH = 1080;
+    const OUTPUT_HEIGHT = 1350; // 4:5 Aspect Ratio
+
+    canvas.width = OUTPUT_WIDTH;
+    canvas.height = OUTPUT_HEIGHT;
+
+    // 1. Draw Video (Center Crop logic)
+    const videoAspect = video.videoWidth / video.videoHeight;
+    const canvasAspect = OUTPUT_WIDTH / OUTPUT_HEIGHT;
+    
+    let drawWidth, drawHeight, offsetX, offsetY;
+
+    if (videoAspect > canvasAspect) {
+      // Video is wider than canvas (crop sides)
+      drawHeight = OUTPUT_HEIGHT;
+      drawWidth = OUTPUT_HEIGHT * videoAspect;
+      offsetX = (OUTPUT_WIDTH - drawWidth) / 2; // will be negative
+      offsetY = 0;
+    } else {
+      // Video is taller than canvas (crop top/bottom)
+      drawWidth = OUTPUT_WIDTH;
+      drawHeight = OUTPUT_WIDTH / videoAspect;
+      offsetX = 0;
+      offsetY = (OUTPUT_HEIGHT - drawHeight) / 2;
+    }
+
+    // Mirroring context for selfie mode feel
+    ctx.save();
+    ctx.translate(OUTPUT_WIDTH, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
+    ctx.restore();
+
+    // 2. Draw Overlay
+    if (overlay) {
+      const img = new Image();
+      img.src = overlay;
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+        finalizeCapture(canvas);
+      };
+      img.onerror = () => {
+        finalizeCapture(canvas);
+      };
+    } else {
+      finalizeCapture(canvas);
+    }
+  }, [overlay]);
+
+  const finalizeCapture = (canvas: HTMLCanvasElement) => {
+    const dataUrl = canvas.toDataURL('image/png', 0.9);
+    onCapture(dataUrl);
+  };
+
   // Initialize Camera
   useEffect(() => {
     const getCameras = async () => {
@@ -70,7 +134,6 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     startStream();
 
     return () => {
-      // Cleanup stream
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
@@ -78,88 +141,24 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     };
   }, [currentDeviceId]);
 
-  // Handle Countdown
+  // Handle Countdown (usa captureImage já declarado acima)
   useEffect(() => {
-    if (isCountingDown) {
-      setCountdownValue(3);
-      const interval = setInterval(() => {
-        setCountdownValue(prev => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            captureImage();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(interval);
-    }
+    if (!isCountingDown) return;
+
+    setCountdownValue(3);
+    const interval = setInterval(() => {
+      setCountdownValue(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          captureImage();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, [isCountingDown, captureImage]);
-
-  const captureImage = useCallback(() => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Define output resolution (High Res)
-    const OUTPUT_WIDTH = 1080;
-    const OUTPUT_HEIGHT = 1350; // 4:5 Aspect Ratio
-
-    canvas.width = OUTPUT_WIDTH;
-    canvas.height = OUTPUT_HEIGHT;
-
-    // 1. Draw Video (Center Crop logic)
-    // Calculate scaling to cover the 4:5 area
-    const videoAspect = video.videoWidth / video.videoHeight;
-    const canvasAspect = OUTPUT_WIDTH / OUTPUT_HEIGHT;
-    
-    let drawWidth, drawHeight, offsetX, offsetY;
-
-    if (videoAspect > canvasAspect) {
-      // Video is wider than canvas (crop sides)
-      drawHeight = OUTPUT_HEIGHT;
-      drawWidth = OUTPUT_HEIGHT * videoAspect;
-      offsetX = (OUTPUT_WIDTH - drawWidth) / 2; // will be negative
-      offsetY = 0;
-    } else {
-      // Video is taller than canvas (crop top/bottom) - unlikely for webcam but possible
-      drawWidth = OUTPUT_WIDTH;
-      drawHeight = OUTPUT_WIDTH / videoAspect;
-      offsetX = 0;
-      offsetY = (OUTPUT_HEIGHT - drawHeight) / 2;
-    }
-
-    // Mirroring context for selfie mode feel
-    ctx.save();
-    ctx.translate(OUTPUT_WIDTH, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
-    ctx.restore();
-
-    // 2. Draw Overlay
-    if (overlay) {
-      const img = new Image();
-      img.src = overlay;
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
-        finalizeCapture(canvas);
-      };
-      img.onerror = () => {
-        // Even if overlay fails, capture the photo
-        finalizeCapture(canvas);
-      };
-    } else {
-      finalizeCapture(canvas);
-    }
-  }, [overlay]);
-
-  const finalizeCapture = (canvas: HTMLCanvasElement) => {
-    const dataUrl = canvas.toDataURL('image/png', 0.9);
-    onCapture(dataUrl);
-  };
 
   const switchCamera = () => {
     const currentIndex = devices.findIndex(d => d.deviceId === currentDeviceId);
@@ -239,7 +238,6 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
           </div>
         </button>
         
-        {/* Placeholder for symmetry if only 1 camera */}
         {devices.length <= 1 && <div className="w-[58px] hidden sm:block" />} 
       </div>
     </div>
