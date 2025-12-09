@@ -82,7 +82,8 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
   }, [overlay]);
 
   const finalizeCapture = (canvas: HTMLCanvasElement) => {
-    const dataUrl = canvas.toDataURL('image/png', 0.9);
+    // PNG sem parâmetro de qualidade para evitar qualquer compressão com perdas
+    const dataUrl = canvas.toDataURL('image/png');
     onCapture(dataUrl);
   };
 
