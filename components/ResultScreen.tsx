@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { PhotoData } from '../types';
 import { Download, RefreshCw, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { supabase } from '../supabaseClient';
 
 interface ResultScreenProps {
   photoData: PhotoData;
@@ -12,7 +11,7 @@ interface ResultScreenProps {
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error' | 'disabled';
 
-const BUCKET_NAME = 'fotototem';
+const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY as string | undefined;
 
 export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake, onPublicUrlReady }) => {
   const { dataUrl, timestamp, publicUrl: initialPublicUrl } = photoData;
@@ -22,7 +21,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake,
 
   useEffect(() => {
     const run = async () => {
-      if (!supabase) {
+      if (!IMGBB_API_KEY) {
         setUploadStatus('disabled');
         return;
       }
@@ -35,29 +34,33 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake,
 
       setUploadStatus('uploading');
 
-      const response = await fetch(dataUrl);
-      const blob = await response.blob();
+      // dataUrl está em formato data:image/png;base64,...
+      const base64 = dataUrl.split(',')[1];
 
-      const fileName = `foto_${timestamp}.png`;
-      const dateFolder = new Date(timestamp).toISOString().slice(0, 10);
-      const filePath = `${dateFolder}/${fileName}`;
+      const formData = new FormData();
+      formData.append('image', base64);
+      formData.append('name', `fotototem_${timestamp}`);
 
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(filePath, blob, {
-          contentType: 'image/png',
-          upsert: true,
-        });
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(IMGBB_API_KEY)}`, {
+        method: 'POST',
+        body: formData,
+      });
 
-      if (uploadError) {
-        console.error('Erro ao enviar para Supabase Storage:', uploadError);
+      if (!response.ok) {
+        console.error('Erro HTTP ao enviar para ImgBB:', response.status, response.statusText);
         setUploadStatus('error');
         return;
       }
 
-      const {
-        data: { publicUrl: url },
-      } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+      const result = await response.json();
+
+      if (!result.success || !result.data?.url) {
+        console.error('Resposta inesperada do ImgBB:', result);
+        setUploadStatus('error');
+        return;
+      }
+
+      const url: string = result.data.url;
 
       setPublicUrl(url);
       setUploadStatus('success');
@@ -90,7 +93,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake,
       return 'Gerando seu link para compartilhamento...';
     }
     if (uploadStatus === 'disabled') {
-      return 'Não foi possível gerar um link na nuvem (Supabase não configurado), mas você ainda pode salvar a foto neste computador.';
+      return 'Não foi possível gerar um link na nuvem (ImgBB não configurado), mas você ainda pode salvar a foto neste computador.';
     }
     return 'Não conseguimos gerar o link automaticamente. Você ainda pode salvar a foto neste computador.';
   };
@@ -121,7 +124,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake,
           </div>
 
           {/* QR / Status */}
-          <div className="p-6 sm:p-8 bg-white rounded-mosaic shadow-xl flex flex-col items-center justify-center gap-4 w-full min-h-[320px] sm:min-h-[380px] lg:min-h-[440px] transition-all text-globo-text">
+          <div className="p-6 sm:p-8 bg-white rounded-mosaic shadow-xl flex flex-col items-center justify-center gap-4 w-full min-h-[320px] sm:minh-[380px] lg:min-h-[440px] transition-all text-globo-text">
             {uploadStatus === 'uploading' || uploadStatus === 'idle' ? (
               <div className="flex flex-col items-center gap-4 text-globo-textSec py-10">
                 <Loader2 className="animate-spin text-globo-blue" size={60} />
@@ -147,10 +150,10 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake,
               <div className="flex flex-col items-center gap-3 text-globo-text py-6">
                 <AlertCircle size={44} className="text-globo-textSec" />
                 <p className="text-sm sm:text-base font-bold text-center max-w-xs">
-                  QR Code desativado porque as variáveis do Supabase não estão configuradas.
+                  QR Code desativado porque a chave do ImgBB não está configurada.
                 </p>
                 <p className="text-xs sm:text-sm text-globo-textSec text-center max-w-xs">
-                  Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY para habilitar o QR, ou use apenas o botão de salvar no PC.
+                  Configure VITE_IMGBB_API_KEY para habilitar o QR, ou use apenas o botão de salvar no PC.
                 </p>
               </div>
             ) : (
