@@ -76,7 +76,6 @@ const App: React.FC = () => {
     setCapturedPhoto(photo);
     setAppState('result');
 
-    // Atualiza galeria mantendo apenas as últimas MAX_GALLERY_ITEMS fotos
     setGalleryPhotos((prev) => {
       const updated = [photo, ...prev];
       return updated.slice(0, MAX_GALLERY_ITEMS);
@@ -109,7 +108,7 @@ const App: React.FC = () => {
   const isResult = appState === 'result';
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-globo-blue/10 via-white to-globo-blue/5 overflow-hidden relative">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-globo-blue/5 via-white to-globo-blue/10 overflow-hidden relative">
       {/* Header Institucional */}
       <header
         className={`w-full px-4 sm:px-8 py-3 sm:py-4 flex justify-between items-center z-20 transition-all duration-300 ${
@@ -117,7 +116,7 @@ const App: React.FC = () => {
         } shadow-sm`}
       >
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className={isResult ? 'bg-white rounded-full p-1 shadow-sm' : 'bg-white rounded-full p-1 shadow-sm'}>
+          <div className="bg-white rounded-full p-1 shadow-sm">
             <GloboLogo />
           </div>
           <div className="flex flex-col leading-tight">
@@ -138,7 +137,6 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Botão de moldura só na tela de setup */}
         {appState === 'setup' && (
           <div className="flex items-center gap-4">
             <label className="cursor-pointer bg-white hover:bg-globo-gray text-globo-blue border border-globo-blue px-4 sm:px-6 py-2 sm:py-3 rounded-pill flex items-center gap-2 transition-all text-xs sm:text-sm font-medium shadow-sm hover:shadow-md">
@@ -159,31 +157,31 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full flex flex-col items-center justify-center pt-20 sm:pt-24 pb-4 sm:pb-6">
+      <main className="flex-1 w-full flex flex-col items-center pt-20 sm:pt-24 pb-4 sm:pb-6">
         {isResult && capturedPhoto ? (
           <ResultScreen photoData={capturedPhoto} onRetake={handleRetake} />
         ) : (
           <>
             <div className="flex flex-col items-center gap-6 sm:gap-8 w-full max-w-6xl px-3 sm:px-6 lg:px-10 animate-in fade-in duration-500">
-              {/* Bloco de boas-vindas azul */}
+              {/* Bloco de boas-vindas neutro */}
               <div className="w-full max-w-3xl text-center">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-globo-blue/10 text-globo-blue text-xs sm:text-sm font-medium mb-3">
                   <Sparkles size={16} />
                   <span>Registre sua presença com uma foto especial</span>
                 </div>
-                <div className="bg-globo-blue text-white rounded-mosaic px-5 sm:px-8 py-5 sm:py-6 shadow-lg inline-flex flex-col items-center gap-2 w-full">
+                <div className="bg-white text-globo-text rounded-mosaic px-5 sm:px-8 py-5 sm:py-6 shadow-md inline-flex flex-col items-center gap-2 w-full border border-globo-gray">
                   <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">
                     Que bom ter você aqui.
                   </h2>
-                  <p className="text-sm sm:text-base lg:text-lg text-white/90 max-w-2xl">
+                  <p className="text-sm sm:text-base lg:text-lg text-globo-textSec max-w-2xl">
                     Posicione-se em frente à câmera, sorria e clique em{' '}
-                    <span className="font-semibold">“Tirar Foto”</span> para registrar esse momento com a Globo.
+                    <span className="font-semibold text-globo-blue">“Tirar Foto”</span> para registrar esse momento com a Globo.
                   </p>
                 </div>
               </div>
 
-              {/* Câmera centralizada */}
-              <div className="w-full flex justify-center">
+              {/* Câmera centralizada visualmente */}
+              <div className="w-full flex justify-center mt-2">
                 <CameraFeed
                   overlay={overlayImage}
                   onCapture={handleCapture}
