@@ -64,19 +64,19 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
 
   return (
     <div className="absolute inset-0 w-full h-full bg-globo-gradient flex items-center justify-center p-3 sm:p-6 lg:p-10 overflow-y-auto">
-      <div className="w-full max-w-[1200px] flex flex-col lg:flex-row items-center gap-8 lg:gap-16 xl:gap-20 animate-in fade-in slide-in-from-bottom-8 duration-500">
-        {/* Left: The Photo */}
+      <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center gap-8 lg:gap-16 xl:gap-20 animate-in fade-in slide-in-from-bottom-8 duration-500">
+        {/* Esquerda: Foto com moldura */}
         <div className="flex-1 flex justify-center lg:justify-end">
           <div className="relative group w-full max-w-[520px] sm:max-w-[620px]">
             <img
               src={photoData.dataUrl}
               alt="Captured Result"
-              className="w-full h-auto rounded-mosaic shadow-2xl border-[10px] sm:border-[12px] border-white transform rotate-1 transition-transform group-hover:rotate-0 duration-300"
+              className="w-full h-auto rounded-mosaic shadow-2xl border-[10px] sm:border-[14px] border-white transform rotate-1 transition-transform group-hover:rotate-0 duration-300"
             />
           </div>
         </div>
 
-        {/* Right: Actions & QR */}
+        {/* Direita: QR + ações */}
         <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left space-y-6 max-w-xl w-full text-white">
           <div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 leading-tight">
@@ -91,11 +91,11 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
             </p>
           </div>
 
-          {/* QR Code Card Area */}
-          <div className="p-6 sm:p-8 bg-white rounded-mosaic shadow-xl flex flex-col items-center justify-center gap-4 w-full min-h-[300px] sm:min-h-[360px] lg:min-h-[420px] transition-all text-globo-text">
+          {/* Área do QR Code – maior */}
+          <div className="p-6 sm:p-8 bg-white rounded-mosaic shadow-xl flex flex-col items-center justify-center gap-4 w-full min-h-[320px] sm:min-h-[380px] lg:min-h-[440px] transition-all text-globo-text">
             {uploadStatus === 'uploading' || uploadStatus === 'idle' ? (
               <div className="flex flex-col items-center gap-4 text-globo-textSec py-10">
-                <Loader2 className="animate-spin text-globo-blue" size={56} />
+                <Loader2 className="animate-spin text-globo-blue" size={60} />
                 <p className="text-sm sm:text-base font-medium text-center max-w-xs">
                   Gerando seu link...
                 </p>
@@ -103,14 +103,14 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
             ) : uploadStatus === 'success' && publicUrl ? (
               <>
                 <div className="relative animate-in zoom-in duration-300">
-                  <QRCode value={publicUrl} size={240} level="L" fgColor="#000000" />
+                  <QRCode value={publicUrl} size={260} level="L" fgColor="#000000" />
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="bg-white p-1.5 rounded-full shadow-sm">
                       <CheckCircle2 size={26} className="text-globo-success" />
                     </div>
                   </div>
                 </div>
-                <p className="text-[11px] sm:text-xs text-globo-textSec font-mono max-w-[280px] truncate">
+                <p className="text-[11px] sm:text-xs text-globo-textSec font-mono max-w-[300px] truncate">
                   {publicUrl}
                 </p>
                 <p className="text-xs sm:text-sm text-globo-textSec text-center max-w-xs">
@@ -128,7 +128,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
             )}
           </div>
 
-          {/* Action Buttons */}
+          {/* Botões de ação */}
           <div className="flex flex-col w-full gap-3 pt-1 sm:pt-2">
             <button
               onClick={handleDownload}
