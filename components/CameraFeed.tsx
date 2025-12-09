@@ -94,7 +94,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [isCountingDown]);
+  }, [isCountingDown, captureImage]);
 
   const captureImage = useCallback(() => {
     const video = videoRef.current;
@@ -150,7 +150,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
       img.onerror = () => {
         // Even if overlay fails, capture the photo
         finalizeCapture(canvas);
-      }
+      };
     } else {
       finalizeCapture(canvas);
     }
@@ -168,14 +168,14 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
   };
 
   return (
-    <div className="relative flex flex-col items-center w-full max-w-[500px]">
+    <div className="relative flex flex-col items-center w-full max-w-[520px]">
       {/* Container for aspect ratio 4:5 - Mosaic Style (15px radius) */}
       <div className="relative w-full aspect-[4/5] bg-globo-gray rounded-mosaic overflow-hidden shadow-xl ring-1 ring-black/5">
         
         {/* Hidden processing canvas */}
         <canvas ref={canvasRef} className="hidden" />
 
-        {/* Live Video Feed */}
+        {/* Live Video Feed - sempre nítido */}
         <video 
           ref={videoRef}
           autoPlay 
@@ -193,12 +193,17 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
           />
         )}
 
-        {/* Countdown Overlay */}
+        {/* Countdown lateral (sem escurecer a tela) */}
         {isCountingDown && (
-          <div className="absolute inset-0 z-30 bg-black/20 backdrop-blur-[2px] flex items-center justify-center">
-            <span className="text-[128px] font-bold text-white animate-bounce drop-shadow-xl" style={{textShadow: '0 4px 20px rgba(0,0,0,0.3)'}}>
-              {countdownValue > 0 ? countdownValue : '📸'}
+          <div className="absolute top-4 right-4 z-30 flex flex-col items-center gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-white/80 bg-black/40 px-2 py-0.5 rounded-full">
+              Foto em
             </span>
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/50 flex items-center justify-center shadow-lg">
+              <span className="text-3xl sm:text-4xl font-bold text-white drop-shadow-[0_3px_10px_rgba(0,0,0,0.6)]">
+                {countdownValue > 0 ? countdownValue : '📸'}
+              </span>
+            </div>
           </div>
         )}
 
@@ -212,7 +217,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
       </div>
 
       {/* Control Bar */}
-      <div className="mt-8 flex items-center gap-6 z-20">
+      <div className="mt-6 flex items-center gap-6 z-20">
         {devices.length > 1 && (
           <button 
             onClick={switchCamera}
