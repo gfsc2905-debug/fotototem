@@ -144,7 +144,7 @@ const App: React.FC = () => {
       {/* Header */}
       <header
         className={`w-full px-4 sm:px-8 py-3 sm:py-4 flex justify-between items-center z-20 transition-all duration-300 ${
-          isResult ? 'absolute top-0 left-0 bg-transparent' : 'bg-transparent'
+          isResult ? 'absolute top-0 left-0 bg-transparent' : 'absolute top-0 left-0 bg-transparent'
         }`}
       >
         <div className="flex items-center gap-3 sm:gap-4">
@@ -152,9 +152,7 @@ const App: React.FC = () => {
             <GloboLogo />
           </div>
           <div className="flex flex-col leading-tight">
-            <h1
-              className={`text-xl sm:text-2xl font-semibold tracking-tight text-white`}
-            >
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-white">
               Fotototem
             </h1>
             <span className="text-xs sm:text-sm font-medium text-white/80">
@@ -183,7 +181,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full flex flex-col items-center justify-between">
+      <main className="flex-1 w-full flex flex-col">
         {isResult && capturedPhoto ? (
           <ResultScreen
             photoData={capturedPhoto}
@@ -192,37 +190,39 @@ const App: React.FC = () => {
           />
         ) : (
           <>
-            {/* Bloco azul principal, espelhando o layout da tela de resultado */}
-            <div className="w-full flex-1 flex items-center justify-center px-3 sm:px-6 lg:px-10 pt-16 sm:pt-20 pb-4 sm:pb-6">
-              <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center gap-8 lg:gap-16 xl:gap-20 bg-globo-gradient rounded-[32px] sm:rounded-[40px] shadow-2xl px-4 sm:px-8 lg:px-10 py-6 sm:py-8 lg:py-10 relative overflow-hidden">
-                {/* Câmera (lado esquerdo) */}
-                <div className="flex-1 flex justify-center lg:justify-end">
-                  <CameraFeed
-                    overlay={overlayImage}
-                    onCapture={handleCapture}
-                    isCountingDown={appState === 'countdown'}
-                    setAppState={setAppState}
-                  />
-                </div>
+            {/* Bloco azul principal ocupando praticamente toda a tela */}
+            <div className="flex-1 w-full flex items-stretch justify-center">
+              <div className="w-full flex items-center justify-center px-3 sm:px-6 lg:px-10 pt-16 sm:pt-20 pb-4 sm:pb-6">
+                <div className="w-full h-full max-w-7xl flex flex-col lg:flex-row items-center gap-8 lg:gap-16 xl:gap-20 bg-globo-gradient rounded-none lg:rounded-[32px] sm:rounded-[40px] shadow-2xl px-4 sm:px-8 lg:px-10 py-10 sm:py-12 lg:py-14 relative overflow-hidden">
+                  {/* Câmera (lado esquerdo) */}
+                  <div className="flex-1 flex justify-center lg:justify-end">
+                    <CameraFeed
+                      overlay={overlayImage}
+                      onCapture={handleCapture}
+                      isCountingDown={appState === 'countdown'}
+                      setAppState={setAppState}
+                    />
+                  </div>
 
-                {/* Texto/instruções (lado direito) */}
-                <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left space-y-4 sm:space-y-6 max-w-xl w-full text-white">
-                  <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/10 text-white text-xs sm:text-sm font-medium mb-3">
-                      <Sparkles size={16} />
-                      <span>Registre sua presença com uma foto especial</span>
+                  {/* Texto/instruções (lado direito) */}
+                  <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left space-y-4 sm:space-y-6 max-w-xl w-full text-white mt-6 lg:mt-0">
+                    <div>
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/10 text-white text-xs sm:text-sm font-medium mb-3">
+                        <Sparkles size={16} />
+                        <span>Registre sua presença com uma foto especial</span>
+                      </div>
+                      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 leading-tight">
+                        Que bom ter você aqui.
+                      </h2>
+                      <p className="text-white/85 text-sm sm:text-base lg:text-lg max-w-xl">
+                        Posicione-se em frente à câmera, ajuste a moldura e clique em{' '}
+                        <span className="font-semibold">“Tirar Foto”</span> para registrar esse momento com a Globo.
+                      </p>
                     </div>
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 leading-tight">
-                      Que bom ter você aqui.
-                    </h2>
-                    <p className="text-white/85 text-sm sm:text-base lg:text-lg max-w-xl">
-                      Posicione-se em frente à câmera, ajuste a moldura e clique em{' '}
-                      <span className="font-semibold">“Tirar Foto”</span> para registrar esse momento com a Globo.
+                    <p className="text-xs sm:text-sm text-white/80 max-w-sm">
+                      Dica: centralize-se no quadro 4:5 e aguarde a contagem regressiva antes da captura.
                     </p>
                   </div>
-                  <p className="text-xs sm:text-sm text-white/80 max-w-sm">
-                    Dica: centralize-se no quadro 4:5 e aguarde a contagem regressiva antes da captura.
-                  </p>
                 </div>
               </div>
             </div>
