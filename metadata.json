@@ -1,0 +1,7 @@
+{
+  "name": "Fotototem",
+  "description": "A web-based photo booth application with custom frame overlays, 4:5 aspect ratio support, and instant QR code sharing interface.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
