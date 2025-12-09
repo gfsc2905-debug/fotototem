@@ -11,7 +11,8 @@ interface ResultScreenProps {
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error' | 'disabled';
 
-const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY as string | undefined;
+// Chave do ImgBB definida diretamente no código
+const IMGBB_API_KEY = '9877b1250225b299b704b0e01d4ccd53';
 
 export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake, onPublicUrlReady }) => {
   const { dataUrl, timestamp, publicUrl: initialPublicUrl } = photoData;
@@ -41,10 +42,13 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake,
       formData.append('image', base64);
       formData.append('name', `fotototem_${timestamp}`);
 
-      const response = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(IMGBB_API_KEY)}`, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(
+        `https://api.imgbb.com/1/upload?key=${encodeURIComponent(IMGBB_API_KEY)}`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         console.error('Erro HTTP ao enviar para ImgBB:', response.status, response.statusText);
