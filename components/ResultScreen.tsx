@@ -7,35 +7,41 @@ import { supabase } from '../supabaseClient';
 interface ResultScreenProps {
   photoData: PhotoData;
   onRetake: () => void;
+  onPublicUrlReady?: (photo: PhotoData, publicUrl: string) => void;
 }
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error' | 'disabled';
 
-const BUCKET_NAME = 'fotototem'; // ajuste se o nome do seu bucket for outro
+const BUCKET_NAME = 'fotototem';
 
-export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake }) => {
-  const { dataUrl, timestamp } = photoData;
+export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake, onPublicUrlReady }) => {
+  const { dataUrl, timestamp, publicUrl: initialPublicUrl } = photoData;
 
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
-  const [publicUrl, setPublicUrl] = useState<string | null>(null);
+  const [publicUrl, setPublicUrl] = useState<string | null>(initialPublicUrl ?? null);
 
-  // Upload automático para Supabase quando a tela abre
+  // Upload automático ou reaproveitamento da URL existente
   useEffect(() => {
     const run = async () => {
-      // Se Supabase não estiver configurado, não tentar upload
       if (!supabase) {
         setUploadStatus('disabled');
         return;
       }
 
+      // Se já veio com publicUrl, só usa
+      if (initialPublicUrl) {
+        setPublicUrl(initialPublicUrl);
+        setUploadStatus('success');
+        return;
+      }
+
       setUploadStatus('uploading');
 
-      // Converte o dataURL da imagem em Blob
       const response = await fetch(dataUrl);
       const blob = await response.blob();
 
       const fileName = `foto_${timestamp}.png`;
-      const dateFolder = new Date(timestamp).toISOString().slice(0, 10); // ex: 2025-03-01
+      const dateFolder = new Date(timestamp).toISOString().slice(0, 10);
       const filePath = `${dateFolder}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -57,10 +63,17 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
 
       setPublicUrl(url);
       setUploadStatus('success');
+
+      if (url && onPublicUrlReady) {
+        onPublicUrlReady(
+          { ...photoData, publicUrl: url },
+          url
+        );
+      }
     };
 
     run();
-  }, [dataUrl, timestamp]);
+  }, [dataUrl, timestamp, initialPublicUrl, photoData, onPublicUrlReady]);
 
   const handleDownload = () => {
     const link = document.createElement('a');
@@ -81,14 +94,13 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
     if (uploadStatus === 'disabled') {
       return 'Não foi possível gerar um link na nuvem (Supabase não configurado), mas você ainda pode salvar a foto neste computador.';
     }
-    // error
     return 'Não conseguimos gerar o link automaticamente. Você ainda pode salvar a foto neste computador.';
   };
 
   return (
     <div className="absolute inset-0 w-full h-full bg-globo-gradient flex items-center justify-center p-3 sm:p-6 lg:p-10 overflow-y-auto">
       <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center gap-8 lg:gap-16 xl:gap-20 animate-in fade-in slide-in-from-bottom-8 duration-500">
-        {/* Esquerda: Foto com moldura */}
+        {/* Esquerda: Foto */}
         <div className="flex-1 flex justify-center lg:justify-end">
           <div className="relative group w-full max-w-[520px] sm:max-w-[620px]">
             <img
@@ -110,7 +122,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
             </p>
           </div>
 
-          {/* Área do QR Code / Status */}
+          {/* QR / Status */}
           <div className="p-6 sm:p-8 bg-white rounded-mosaic shadow-xl flex flex-col items-center justify-center gap-4 w-full min-h-[320px] sm:min-h-[380px] lg:min-h-[440px] transition-all text-globo-text">
             {uploadStatus === 'uploading' || uploadStatus === 'idle' ? (
               <div className="flex flex-col items-center gap-4 text-globo-textSec py-10">
@@ -159,7 +171,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
             )}
           </div>
 
-          {/* Botões de ação */}
+          {/* Botões */}
           <div className="flex flex-col w-full gap-3 pt-1 sm:pt-2">
             <button
               onClick={handleDownload}

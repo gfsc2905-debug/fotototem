@@ -4,6 +4,7 @@ import { ResultScreen } from './components/ResultScreen';
 import { PhotoData, AppState } from './types';
 import { Image as ImageIcon, Sparkles } from 'lucide-react';
 import { Gallery } from './components/Gallery';
+import { supabase } from './supabaseClient';
 
 const GloboLogo = () => (
   <svg
@@ -60,6 +61,7 @@ const GloboLogo = () => (
 );
 
 const MAX_GALLERY_ITEMS = 20;
+const BUCKET_NAME = 'fotototem';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>('setup');
@@ -100,8 +102,40 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSelectFromGallery = (photo: PhotoData) => {
-    setCapturedPhoto(photo);
+  // Atualiza App e galeria quando o ResultScreen descobrir uma publicUrl
+  const handlePublicUrlReady = (updatedPhoto: PhotoData, publicUrl: string) => {
+    setCapturedPhoto(updatedPhoto);
+    setGalleryPhotos((prev) =>
+      prev.map((p) =>
+        p.timestamp === updatedPhoto.timestamp ? { ...p, publicUrl } : p
+      )
+    );
+  };
+
+  // Ao clicar numa foto, tenta garantir que exista publicUrl (se Supabase estiver configurado)
+  const handleSelectFromGallery = async (photo: PhotoData) => {
+    let photoWithUrl = photo;
+
+    if (!photo.publicUrl && supabase) {
+      const fileName = `foto_${photo.timestamp}.png`;
+      const dateFolder = new Date(photo.timestamp).toISOString().slice(0, 10);
+      const filePath = `${dateFolder}/${fileName}`;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+
+      if (publicUrl) {
+        photoWithUrl = { ...photo, publicUrl };
+        setGalleryPhotos((prev) =>
+          prev.map((p) =>
+            p.timestamp === photo.timestamp ? { ...p, publicUrl } : p
+          )
+        );
+      }
+    }
+
+    setCapturedPhoto(photoWithUrl);
     setAppState('result');
   };
 
@@ -159,7 +193,11 @@ const App: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 w-full flex flex-col items-center pt-20 sm:pt-24 pb-4 sm:pb-6">
         {isResult && capturedPhoto ? (
-          <ResultScreen photoData={capturedPhoto} onRetake={handleRetake} />
+          <ResultScreen
+            photoData={capturedPhoto}
+            onRetake={handleRetake}
+            onPublicUrlReady={handlePublicUrlReady}
+          />
         ) : (
           <>
             <div className="flex flex-col items-center gap-6 sm:gap-8 w-full max-w-6xl px-3 sm:px-6 lg:px-10 animate-in fade-in duration-500">
@@ -180,7 +218,7 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Câmera centralizada visualmente */}
+              {/* Câmera centralizada */}
               <div className="w-full flex justify-center mt-2">
                 <CameraFeed
                   overlay={overlayImage}
