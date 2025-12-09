@@ -1,15 +1,66 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { PhotoData } from '../types';
-import { Download, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Download, RefreshCw, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 
 interface ResultScreenProps {
   photoData: PhotoData;
   onRetake: () => void;
 }
 
+type UploadStatus = 'idle' | 'uploading' | 'success' | 'error' | 'disabled';
+
+const BUCKET_NAME = 'fotototem'; // ajuste se o nome do seu bucket for outro
+
 export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake }) => {
   const { dataUrl, timestamp } = photoData;
+
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
+  const [publicUrl, setPublicUrl] = useState<string | null>(null);
+
+  // Upload automático para Supabase quando a tela abre
+  useEffect(() => {
+    const run = async () => {
+      // Se Supabase não estiver configurado, não tentar upload
+      if (!supabase) {
+        setUploadStatus('disabled');
+        return;
+      }
+
+      setUploadStatus('uploading');
+
+      // Converte o dataURL da imagem em Blob
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+
+      const fileName = `foto_${timestamp}.png`;
+      const dateFolder = new Date(timestamp).toISOString().slice(0, 10); // ex: 2025-03-01
+      const filePath = `${dateFolder}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(filePath, blob, {
+          contentType: 'image/png',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error('Erro ao enviar para Supabase Storage:', uploadError);
+        setUploadStatus('error');
+        return;
+      }
+
+      const {
+        data: { publicUrl: url },
+      } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+
+      setPublicUrl(url);
+      setUploadStatus('success');
+    };
+
+    run();
+  }, [dataUrl, timestamp]);
 
   const handleDownload = () => {
     const link = document.createElement('a');
@@ -18,6 +69,20 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const renderHelperText = () => {
+    if (uploadStatus === 'success') {
+      return 'Aponte a câmera do seu celular para o QR Code para abrir a foto.';
+    }
+    if (uploadStatus === 'uploading' || uploadStatus === 'idle') {
+      return 'Gerando seu link para compartilhamento...';
+    }
+    if (uploadStatus === 'disabled') {
+      return 'Não foi possível gerar um link na nuvem (Supabase não configurado), mas você ainda pode salvar a foto neste computador.';
+    }
+    // error
+    return 'Não conseguimos gerar o link automaticamente. Você ainda pode salvar a foto neste computador.';
   };
 
   return (
@@ -41,23 +106,57 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake 
               Ficou ótima! 🎉
             </h2>
             <p className="text-white/80 text-base sm:text-lg">
-              Aponte a câmera do seu celular para o QR Code para abrir a foto.
+              {renderHelperText()}
             </p>
           </div>
 
-          {/* Área do QR Code */}
+          {/* Área do QR Code / Status */}
           <div className="p-6 sm:p-8 bg-white rounded-mosaic shadow-xl flex flex-col items-center justify-center gap-4 w-full min-h-[320px] sm:min-h-[380px] lg:min-h-[440px] transition-all text-globo-text">
-            <div className="relative animate-in zoom-in duration-300">
-              <QRCode value={dataUrl} size={260} level="L" fgColor="#000000" />
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="bg-white p-1.5 rounded-full shadow-sm">
-                  <CheckCircle2 size={26} className="text-globo-success" />
-                </div>
+            {uploadStatus === 'uploading' || uploadStatus === 'idle' ? (
+              <div className="flex flex-col items-center gap-4 text-globo-textSec py-10">
+                <Loader2 className="animate-spin text-globo-blue" size={60} />
+                <p className="text-sm sm:text-base font-medium text-center max-w-xs">
+                  Gerando seu link...
+                </p>
               </div>
-            </div>
-            <p className="text-xs sm:text-sm text-globo-textSec text-center max-w-xs">
-              Se preferir, use também o botão abaixo para salvar a imagem diretamente neste computador.
-            </p>
+            ) : uploadStatus === 'success' && publicUrl ? (
+              <>
+                <div className="relative animate-in zoom-in duration-300">
+                  <QRCode value={publicUrl} size={260} level="L" fgColor="#000000" />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="bg-white p-1.5 rounded-full shadow-sm">
+                      <CheckCircle2 size={26} className="text-globo-success" />
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[11px] sm:text-xs text-globo-textSec font-mono max-w-[300px] truncate">
+                  {publicUrl}
+                </p>
+                <p className="text-xs sm:text-sm text-globo-textSec text-center max-w-xs">
+                  Aponte a câmera do seu celular para o QR Code para abrir a foto.
+                </p>
+              </>
+            ) : uploadStatus === 'disabled' ? (
+              <div className="flex flex-col items-center gap-3 text-globo-text py-6">
+                <AlertCircle size={44} className="text-globo-textSec" />
+                <p className="text-sm sm:text-base font-bold text-center max-w-xs">
+                  QR Code desativado porque as variáveis do Supabase não estão configuradas.
+                </p>
+                <p className="text-xs sm:text-sm text-globo-textSec text-center max-w-xs">
+                  Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY para habilitar o QR, ou use apenas o botão de salvar no PC.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3 text-globo-error py-6">
+                <AlertCircle size={44} />
+                <p className="text-sm sm:text-base font-bold text-center max-w-xs">
+                  Não foi possível gerar o QR Code nesta tentativa.
+                </p>
+                <p className="text-xs sm:text-sm text-globo-textSec text-center max-w-xs">
+                  Verifique sua conexão ou tente tirar outra foto. Você ainda pode salvar a imagem no PC.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Botões de ação */}
