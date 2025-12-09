@@ -3,6 +3,7 @@ import { CameraFeed } from './components/CameraFeed';
 import { ResultScreen } from './components/ResultScreen';
 import { PhotoData, AppState } from './types';
 import { Image as ImageIcon, Sparkles } from 'lucide-react';
+import { Gallery } from './components/Gallery';
 
 const GloboLogo = () => (
   <svg
@@ -58,17 +59,28 @@ const GloboLogo = () => (
   </svg>
 );
 
+const MAX_GALLERY_ITEMS = 20;
+
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>('setup');
   const [capturedPhoto, setCapturedPhoto] = useState<PhotoData | null>(null);
   const [overlayImage, setOverlayImage] = useState<string | null>(null);
+  const [galleryPhotos, setGalleryPhotos] = useState<PhotoData[]>([]);
 
   const handleCapture = (dataUrl: string) => {
-    setCapturedPhoto({
+    const photo: PhotoData = {
       dataUrl,
       timestamp: Date.now(),
-    });
+    };
+
+    setCapturedPhoto(photo);
     setAppState('result');
+
+    // Atualiza galeria mantendo apenas as últimas MAX_GALLERY_ITEMS fotos
+    setGalleryPhotos((prev) => {
+      const updated = [photo, ...prev];
+      return updated.slice(0, MAX_GALLERY_ITEMS);
+    });
   };
 
   const handleRetake = () => {
@@ -87,6 +99,11 @@ const App: React.FC = () => {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleSelectFromGallery = (photo: PhotoData) => {
+    setCapturedPhoto(photo);
+    setAppState('result');
   };
 
   const isResult = appState === 'result';
@@ -146,33 +163,39 @@ const App: React.FC = () => {
         {isResult && capturedPhoto ? (
           <ResultScreen photoData={capturedPhoto} onRetake={handleRetake} />
         ) : (
-          <div className="flex flex-col items-center gap-6 sm:gap-8 w-full max-w-6xl px-3 sm:px-6 lg:px-10 animate-in fade-in duration-500">
-            {/* Bloco de boas-vindas azul */}
-            <div className="w-full max-w-3xl text-center">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-globo-blue/10 text-globo-blue text-xs sm:text-sm font-medium mb-3">
-                <Sparkles size={16} />
-                <span>Registre sua presença com uma foto especial</span>
+          <>
+            <div className="flex flex-col items-center gap-6 sm:gap-8 w-full max-w-6xl px-3 sm:px-6 lg:px-10 animate-in fade-in duration-500">
+              {/* Bloco de boas-vindas azul */}
+              <div className="w-full max-w-3xl text-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-globo-blue/10 text-globo-blue text-xs sm:text-sm font-medium mb-3">
+                  <Sparkles size={16} />
+                  <span>Registre sua presença com uma foto especial</span>
+                </div>
+                <div className="bg-globo-blue text-white rounded-mosaic px-5 sm:px-8 py-5 sm:py-6 shadow-lg inline-flex flex-col items-center gap-2 w-full">
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">
+                    Que bom ter você aqui.
+                  </h2>
+                  <p className="text-sm sm:text-base lg:text-lg text-white/90 max-w-2xl">
+                    Posicione-se em frente à câmera, sorria e clique em{' '}
+                    <span className="font-semibold">“Tirar Foto”</span> para registrar esse momento com a Globo.
+                  </p>
+                </div>
               </div>
-              <div className="bg-globo-blue text-white rounded-mosaic px-5 sm:px-8 py-5 sm:py-6 shadow-lg inline-flex flex-col items-center gap-2 w-full">
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">
-                  Que bom ter você aqui.
-                </h2>
-                <p className="text-sm sm:text-base lg:text-lg text-white/90 max-w-2xl">
-                  Posicione-se em frente à câmera, sorria e clique em <span className="font-semibold">“Tirar Foto”</span> para registrar esse momento com a Globo.
-                </p>
+
+              {/* Câmera centralizada */}
+              <div className="w-full flex justify-center">
+                <CameraFeed
+                  overlay={overlayImage}
+                  onCapture={handleCapture}
+                  isCountingDown={appState === 'countdown'}
+                  setAppState={setAppState}
+                />
               </div>
             </div>
 
-            {/* Câmera centralizada */}
-            <div className="w-full flex justify-center">
-              <CameraFeed
-                overlay={overlayImage}
-                onCapture={handleCapture}
-                isCountingDown={appState === 'countdown'}
-                setAppState={setAppState}
-              />
-            </div>
-          </div>
+            {/* Galeria das últimas fotos */}
+            <Gallery photos={galleryPhotos} onSelect={handleSelectFromGallery} />
+          </>
         )}
       </main>
 
