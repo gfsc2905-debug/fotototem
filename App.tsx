@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { CameraFeed } from './components/CameraFeed';
 import { ResultScreen } from './components/ResultScreen';
 import { PhotoData, AppState } from './types';
-import { Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon, Sparkles } from 'lucide-react';
 
 const GloboLogo = () => (
   <svg
@@ -89,43 +89,46 @@ const App: React.FC = () => {
     }
   };
 
+  const isResult = appState === 'result';
+
   return (
-    <div className="min-h-screen flex flex-col bg-white overflow-hidden relative">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-globo-blue/10 via-white to-globo-blue/5 overflow-hidden relative">
       {/* Header Institucional */}
       <header
-        className={`w-full px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-20 transition-all duration-300 ${
-          appState === 'result' ? 'absolute top-0 left-0 bg-transparent' : 'bg-white'
-        }`}
+        className={`w-full px-4 sm:px-8 py-3 sm:py-4 flex justify-between items-center z-20 transition-all duration-300 ${
+          isResult ? 'absolute top-0 left-0 bg-transparent' : 'bg-white/90 backdrop-blur'
+        } shadow-sm`}
       >
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className={appState === 'result' ? 'bg-white rounded-full p-1 shadow-sm' : ''}>
+          <div className={isResult ? 'bg-white rounded-full p-1 shadow-sm' : 'bg-white rounded-full p-1 shadow-sm'}>
             <GloboLogo />
           </div>
           <div className="flex flex-col leading-tight">
             <h1
               className={`text-xl sm:text-2xl font-semibold tracking-tight ${
-                appState === 'result' ? 'text-white' : 'text-globo-text'
+                isResult ? 'text-white' : 'text-globo-text'
               }`}
             >
               Fotototem
             </h1>
             <span
-              className={`text-xs sm:text-sm ${
-                appState === 'result' ? 'text-white/80' : 'text-globo-textSec'
+              className={`text-xs sm:text-sm font-medium ${
+                isResult ? 'text-white/80' : 'text-globo-textSec'
               }`}
             >
-              Globo
+              Globo • Uso interno
             </span>
           </div>
         </div>
 
+        {/* Botão de moldura só na tela de setup */}
         {appState === 'setup' && (
           <div className="flex items-center gap-4">
             <label className="cursor-pointer bg-white hover:bg-globo-gray text-globo-blue border border-globo-blue px-4 sm:px-6 py-2 sm:py-3 rounded-pill flex items-center gap-2 transition-all text-xs sm:text-sm font-medium shadow-sm hover:shadow-md">
               <ImageIcon size={16} className="sm:hidden" />
               <ImageIcon size={18} className="hidden sm:block" />
               <span className="whitespace-nowrap">
-                {overlayImage ? 'Trocar Moldura' : 'Carregar Moldura (.png)'}
+                {overlayImage ? 'Trocar moldura (.png)' : 'Carregar moldura (.png)'}
               </span>
               <input
                 type="file"
@@ -139,20 +142,28 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full flex flex-col items-center justify-center pt-20 pb-4 sm:pb-6">
-        {appState === 'result' && capturedPhoto ? (
+      <main className="flex-1 w-full flex flex-col items-center justify-center pt-20 sm:pt-24 pb-4 sm:pb-6">
+        {isResult && capturedPhoto ? (
           <ResultScreen photoData={capturedPhoto} onRetake={handleRetake} />
         ) : (
-          <div className="flex flex-col items-center gap-4 sm:gap-6 w-full max-w-4xl px-3 sm:px-4 animate-in fade-in duration-500">
-            <div className="text-center space-y-1 sm:space-y-2 mb-1 sm:mb-2">
-              <h2 className="text-2xl sm:text-3xl font-bold text-globo-text leading-tight">
-                Que bom ter você aqui.
-              </h2>
-              <p className="text-globo-textSec text-sm sm:text-lg">
-                Vamos registrar esse momento?
-              </p>
+          <div className="flex flex-col items-center gap-6 sm:gap-8 w-full max-w-6xl px-3 sm:px-6 lg:px-10 animate-in fade-in duration-500">
+            {/* Bloco de boas-vindas azul */}
+            <div className="w-full max-w-3xl text-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-globo-blue/10 text-globo-blue text-xs sm:text-sm font-medium mb-3">
+                <Sparkles size={16} />
+                <span>Registre sua presença com uma foto especial</span>
+              </div>
+              <div className="bg-globo-blue text-white rounded-mosaic px-5 sm:px-8 py-5 sm:py-6 shadow-lg inline-flex flex-col items-center gap-2 w-full">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">
+                  Que bom ter você aqui.
+                </h2>
+                <p className="text-sm sm:text-base lg:text-lg text-white/90 max-w-2xl">
+                  Posicione-se em frente à câmera, sorria e clique em <span className="font-semibold">“Tirar Foto”</span> para registrar esse momento com a Globo.
+                </p>
+              </div>
             </div>
 
+            {/* Câmera centralizada */}
             <div className="w-full flex justify-center">
               <CameraFeed
                 overlay={overlayImage}
