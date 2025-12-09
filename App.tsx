@@ -142,9 +142,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-globo-gradient overflow-hidden relative">
       {/* Header em cima do fundo azul */}
-      <header
-        className="w-full px-4 sm:px-8 py-3 sm:py-4 flex justify-between items-center z-20 absolute top-0 left-0"
-      >
+      <header className="w-full px-4 sm:px-8 py-3 sm:py-4 flex justify-between items-center z-20 absolute top-0 left-0">
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="bg-white rounded-full p-1 shadow-sm">
             <GloboLogo />
@@ -188,12 +186,12 @@ const App: React.FC = () => {
           />
         ) : (
           <>
-            {/* Tela de captura 100% azul, mesma lógica visual da tela de resultado */}
-            <div className="flex-1 w-full flex items-center justify-center p-3 sm:p-6 lg:p-10 pt-16 sm:pt-20">
-              <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center gap-8 lg:gap-16 xl:gap-20 animate-in fade-in slide-in-from-bottom-8 duration-500">
+            {/* Tela de captura 100% azul, conteúdo centralizado */}
+            <div className="flex-1 w-full flex items-center justify-center px-3 sm:px-6 lg:px-10 pt-20 sm:pt-24 pb-6">
+              <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 xl:gap-20 animate-in fade-in slide-in-from-bottom-8 duration-500">
                 {/* Esquerda: Live preview grande */}
-                <div className="flex-1 flex justify-center lg:justify-end">
-                  <div className="relative w-full max-w-[520px] sm:max-w-[620px]">
+                <div className="flex-1 flex justify-center">
+                  <div className="relative w-full max-w-[540px] sm:max-w-[620px]">
                     <CameraFeed
                       overlay={overlayImage}
                       onCapture={handleCapture}
