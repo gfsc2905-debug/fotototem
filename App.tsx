@@ -102,7 +102,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Atualiza App e galeria quando o ResultScreen descobrir uma publicUrl
   const handlePublicUrlReady = (updatedPhoto: PhotoData, publicUrl: string) => {
     setCapturedPhoto(updatedPhoto);
     setGalleryPhotos((prev) =>
@@ -112,7 +111,6 @@ const App: React.FC = () => {
     );
   };
 
-  // Ao clicar numa foto, tenta garantir que exista publicUrl (se Supabase estiver configurado)
   const handleSelectFromGallery = async (photo: PhotoData) => {
     let photoWithUrl = photo;
 
@@ -142,12 +140,12 @@ const App: React.FC = () => {
   const isResult = appState === 'result';
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-globo-blue/5 via-white to-globo-blue/10 overflow-hidden relative">
-      {/* Header Institucional */}
+    <div className="min-h-screen flex flex-col bg-white overflow-hidden relative">
+      {/* Header */}
       <header
         className={`w-full px-4 sm:px-8 py-3 sm:py-4 flex justify-between items-center z-20 transition-all duration-300 ${
-          isResult ? 'absolute top-0 left-0 bg-transparent' : 'bg-white/90 backdrop-blur'
-        } shadow-sm`}
+          isResult ? 'absolute top-0 left-0 bg-transparent' : 'bg-transparent'
+        }`}
       >
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="bg-white rounded-full p-1 shadow-sm">
@@ -155,17 +153,11 @@ const App: React.FC = () => {
           </div>
           <div className="flex flex-col leading-tight">
             <h1
-              className={`text-xl sm:text-2xl font-semibold tracking-tight ${
-                isResult ? 'text-white' : 'text-globo-text'
-              }`}
+              className={`text-xl sm:text-2xl font-semibold tracking-tight text-white`}
             >
               Fotototem
             </h1>
-            <span
-              className={`text-xs sm:text-sm font-medium ${
-                isResult ? 'text-white/80' : 'text-globo-textSec'
-              }`}
-            >
+            <span className="text-xs sm:text-sm font-medium text-white/80">
               Globo • Uso interno
             </span>
           </div>
@@ -173,7 +165,7 @@ const App: React.FC = () => {
 
         {appState === 'setup' && (
           <div className="flex items-center gap-4">
-            <label className="cursor-pointer bg-white hover:bg-globo-gray text-globo-blue border border-globo-blue px-4 sm:px-6 py-2 sm:py-3 rounded-pill flex items-center gap-2 transition-all text-xs sm:text-sm font-medium shadow-sm hover:shadow-md">
+            <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white border border-white/40 px-4 sm:px-6 py-2 sm:py-3 rounded-pill flex items-center gap-2 transition-all text-xs sm:text-sm font-medium shadow-sm hover:shadow-md">
               <ImageIcon size={16} className="sm:hidden" />
               <ImageIcon size={18} className="hidden sm:block" />
               <span className="whitespace-nowrap">
@@ -191,7 +183,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full flex flex-col items-center pt-20 sm:pt-24 pb-4 sm:pb-6">
+      <main className="flex-1 w-full flex flex-col items-center justify-between">
         {isResult && capturedPhoto ? (
           <ResultScreen
             photoData={capturedPhoto}
@@ -200,36 +192,42 @@ const App: React.FC = () => {
           />
         ) : (
           <>
-            <div className="flex flex-col items-center gap-6 sm:gap-8 w-full max-w-6xl px-3 sm:px-6 lg:px-10 animate-in fade-in duration-500">
-              {/* Bloco de boas-vindas neutro */}
-              <div className="w-full max-w-3xl text-center">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-globo-blue/10 text-globo-blue text-xs sm:text-sm font-medium mb-3">
-                  <Sparkles size={16} />
-                  <span>Registre sua presença com uma foto especial</span>
+            {/* Bloco azul principal, espelhando o layout da tela de resultado */}
+            <div className="w-full flex-1 flex items-center justify-center px-3 sm:px-6 lg:px-10 pt-16 sm:pt-20 pb-4 sm:pb-6">
+              <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center gap-8 lg:gap-16 xl:gap-20 bg-globo-gradient rounded-[32px] sm:rounded-[40px] shadow-2xl px-4 sm:px-8 lg:px-10 py-6 sm:py-8 lg:py-10 relative overflow-hidden">
+                {/* Câmera (lado esquerdo) */}
+                <div className="flex-1 flex justify-center lg:justify-end">
+                  <CameraFeed
+                    overlay={overlayImage}
+                    onCapture={handleCapture}
+                    isCountingDown={appState === 'countdown'}
+                    setAppState={setAppState}
+                  />
                 </div>
-                <div className="bg-white text-globo-text rounded-mosaic px-5 sm:px-8 py-5 sm:py-6 shadow-md inline-flex flex-col items-center gap-2 w-full border border-globo-gray">
-                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">
-                    Que bom ter você aqui.
-                  </h2>
-                  <p className="text-sm sm:text-base lg:text-lg text-globo-textSec max-w-2xl">
-                    Posicione-se em frente à câmera, sorria e clique em{' '}
-                    <span className="font-semibold text-globo-blue">“Tirar Foto”</span> para registrar esse momento com a Globo.
+
+                {/* Texto/instruções (lado direito) */}
+                <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left space-y-4 sm:space-y-6 max-w-xl w-full text-white">
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/10 text-white text-xs sm:text-sm font-medium mb-3">
+                      <Sparkles size={16} />
+                      <span>Registre sua presença com uma foto especial</span>
+                    </div>
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 leading-tight">
+                      Que bom ter você aqui.
+                    </h2>
+                    <p className="text-white/85 text-sm sm:text-base lg:text-lg max-w-xl">
+                      Posicione-se em frente à câmera, ajuste a moldura e clique em{' '}
+                      <span className="font-semibold">“Tirar Foto”</span> para registrar esse momento com a Globo.
+                    </p>
+                  </div>
+                  <p className="text-xs sm:text-sm text-white/80 max-w-sm">
+                    Dica: centralize-se no quadro 4:5 e aguarde a contagem regressiva antes da captura.
                   </p>
                 </div>
               </div>
-
-              {/* Câmera centralizada */}
-              <div className="w-full flex justify-center mt-2">
-                <CameraFeed
-                  overlay={overlayImage}
-                  onCapture={handleCapture}
-                  isCountingDown={appState === 'countdown'}
-                  setAppState={setAppState}
-                />
-              </div>
             </div>
 
-            {/* Galeria das últimas fotos */}
+            {/* Galeria abaixo do bloco azul */}
             <Gallery photos={galleryPhotos} onSelect={handleSelectFromGallery} />
           </>
         )}

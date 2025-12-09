@@ -20,7 +20,6 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake,
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const [publicUrl, setPublicUrl] = useState<string | null>(initialPublicUrl ?? null);
 
-  // Upload automático ou reaproveitamento da URL existente
   useEffect(() => {
     const run = async () => {
       if (!supabase) {
@@ -28,7 +27,6 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake,
         return;
       }
 
-      // Se já veio com publicUrl, só usa
       if (initialPublicUrl) {
         setPublicUrl(initialPublicUrl);
         setUploadStatus('success');
@@ -141,9 +139,6 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({ photoData, onRetake,
                     </div>
                   </div>
                 </div>
-                <p className="text-[11px] sm:text-xs text-globo-textSec font-mono max-w-[300px] truncate">
-                  {publicUrl}
-                </p>
                 <p className="text-xs sm:text-sm text-globo-textSec text-center max-w-xs">
                   Aponte a câmera do seu celular para o QR Code para abrir a foto.
                 </p>
