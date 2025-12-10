@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { CameraDevice, AppState } from '../types';
-import { SwitchCamera, Camera, AlertCircle } from 'lucide-react';
+import { SwitchCamera, Camera, AlertCircle, Clock } from 'lucide-react';
 
 interface CameraFeedProps {
   overlay: string | null;
@@ -21,6 +21,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
   const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [countdownValue, setCountdownValue] = useState<number>(3);
+  const [countdownDuration, setCountdownDuration] = useState<3 | 5 | 10>(3);
 
   // Função de captura (precisa vir antes do useEffect que a usa)
   const captureImage = useCallback(() => {
@@ -42,7 +43,10 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     const videoAspect = video.videoWidth / video.videoHeight;
     const canvasAspect = OUTPUT_WIDTH / OUTPUT_HEIGHT;
     
-    let drawWidth, drawHeight, offsetX, offsetY;
+    let drawWidth: number;
+    let drawHeight: number;
+    let offsetX: number;
+    let offsetY: number;
 
     if (videoAspect > canvasAspect) {
       // Video is wider than canvas (crop sides)
@@ -79,7 +83,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     } else {
       finalizeCapture(canvas);
     }
-  }, [overlay]);
+  }, [overlay, onCapture]);
 
   const finalizeCapture = (canvas: HTMLCanvasElement) => {
     // PNG sem parâmetro de qualidade para evitar qualquer compressão com perdas
@@ -146,7 +150,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
   useEffect(() => {
     if (!isCountingDown) return;
 
-    setCountdownValue(3);
+    setCountdownValue(countdownDuration);
     const interval = setInterval(() => {
       setCountdownValue(prev => {
         if (prev <= 1) {
@@ -159,12 +163,23 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isCountingDown, captureImage]);
+  }, [isCountingDown, captureImage, countdownDuration]);
 
   const switchCamera = () => {
     const currentIndex = devices.findIndex(d => d.deviceId === currentDeviceId);
     const nextIndex = (currentIndex + 1) % devices.length;
     setCurrentDeviceId(devices[nextIndex].deviceId);
+  };
+
+  const handleStartCountdown = () => {
+    if (error) return;
+    if (isCountingDown) return;
+    setAppState('countdown');
+  };
+
+  const handleChangeDuration = (value: 3 | 5 | 10) => {
+    if (isCountingDown) return;
+    setCountdownDuration(value);
   };
 
   return (
@@ -217,7 +232,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
       </div>
 
       {/* Control Bar */}
-      <div className="mt-6 flex items-center gap-6 z-20">
+      <div className="mt-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 z-20">
         {devices.length > 1 && (
           <button 
             onClick={switchCamera}
@@ -228,16 +243,48 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
           </button>
         )}
 
+        {/* Botão principal de captura */}
         <button 
-          onClick={() => setAppState('countdown')}
+          onClick={handleStartCountdown}
           disabled={isCountingDown || !!error}
-          className="group relative flex items-center justify-center rounded-pill bg-globo-blue shadow-lg hover:shadow-xl hover:opacity-90 transition-all disabled:opacity-50 px-12 py-4"
+          className="group relative flex items-center justify-center rounded-pill bg-globo-blue shadow-lg hover:shadow-xl hover:opacity-90 transition-all disabled:opacity-50 px-10 sm:px-12 py-3.5 sm:py-4"
         >
-          <div className="flex items-center gap-3 text-white font-semibold text-lg">
-            <Camera size={24} />
+          <div className="flex items-center gap-3 text-white font-semibold text-base sm:text-lg">
+            <Camera size={22} className="sm:size-24" />
             <span>Tirar Foto</span>
           </div>
         </button>
+
+        {/* Seletor de tempo do timer */}
+        <div className="flex items-center gap-2 bg-white/90 rounded-pill px-3 py-1.5 shadow-sm border border-black/5">
+          <Clock size={16} className="text-globo-blue" />
+          <span className="text-[11px] text-globo-textSec mr-1 hidden sm:inline">
+            Timer
+          </span>
+          <div className="flex gap-1">
+            {[3, 5, 10].map((value) => {
+              const v = value as 3 | 5 | 10;
+              const isActive = countdownDuration === v;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => handleChangeDuration(v)}
+                  disabled={isCountingDown}
+                  className={[
+                    'px-2 py-1 rounded-full text-[11px] font-semibold transition-all border',
+                    isActive
+                      ? 'bg-globo-blue text-white border-globo-blue'
+                      : 'bg-white text-globo-textSec border-black/5 hover:bg-globo-gray/60',
+                    isCountingDown ? 'opacity-60 cursor-not-allowed' : ''
+                  ].join(' ')}
+                >
+                  {v}s
+                </button>
+              );
+            })}
+          </div>
+        </div>
         
         {devices.length <= 1 && <div className="w-[58px] hidden sm:block" />} 
       </div>
