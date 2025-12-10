@@ -63,11 +63,14 @@ const GloboLogo = () => (
 const MAX_GALLERY_ITEMS = 20;
 const BUCKET_NAME = 'fotototem';
 
+type FrameMode = 'portrait' | 'landscape';
+
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>('setup');
   const [capturedPhoto, setCapturedPhoto] = useState<PhotoData | null>(null);
   const [overlayImage, setOverlayImage] = useState<string | null>(null);
   const [galleryPhotos, setGalleryPhotos] = useState<PhotoData[]>([]);
+  const [frameMode, setFrameMode] = useState<FrameMode>('portrait');
 
   const handleCapture = (dataUrl: string) => {
     const photo: PhotoData = {
@@ -158,7 +161,36 @@ const App: React.FC = () => {
         </div>
 
         {appState === 'setup' && (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Seletor de modo: em pé / deitado */}
+            <div className="flex items-center gap-1 bg-white/10 border border-white/40 rounded-pill px-2 py-1 sm:px-3 sm:py-1.5 text-[11px] sm:text-xs text-white shadow-sm">
+              <span className="hidden sm:inline text-white/80 mr-1">Modo</span>
+              <button
+                type="button"
+                onClick={() => setFrameMode('portrait')}
+                className={[
+                  'px-2 py-1 rounded-full font-semibold transition-all',
+                  frameMode === 'portrait'
+                    ? 'bg-white text-globo-blue'
+                    : 'text-white/70 hover:bg-white/10',
+                ].join(' ')}
+              >
+                Em pé
+              </button>
+              <button
+                type="button"
+                onClick={() => setFrameMode('landscape')}
+                className={[
+                  'px-2 py-1 rounded-full font-semibold transition-all',
+                  frameMode === 'landscape'
+                    ? 'bg-white text-globo-blue'
+                    : 'text-white/70 hover:bg-white/10',
+                ].join(' ')}
+              >
+                Deitado
+              </button>
+            </div>
+
             <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white border border-white/40 px-4 sm:px-6 py-2 sm:py-3 rounded-pill flex items-center gap-2 transition-all text-xs sm:text-sm font-medium shadow-sm hover:shadow-md">
               <ImageIcon size={16} className="sm:hidden" />
               <ImageIcon size={18} className="hidden sm:block" />
@@ -197,6 +229,7 @@ const App: React.FC = () => {
                       onCapture={handleCapture}
                       isCountingDown={appState === 'countdown'}
                       setAppState={setAppState}
+                      mode={frameMode}
                     />
                   </div>
                 </div>
@@ -217,7 +250,7 @@ const App: React.FC = () => {
                     </p>
                   </div>
                   <p className="text-xs sm:text-sm text-white/80 max-w-sm">
-                    Dica: centralize-se no quadro 4:5 e aguarde a contagem regressiva antes da captura.
+                    Dica: centralize-se no quadro e aguarde a contagem regressiva antes da captura.
                   </p>
                 </div>
               </div>

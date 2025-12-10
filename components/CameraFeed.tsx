@@ -7,13 +7,15 @@ interface CameraFeedProps {
   onCapture: (dataUrl: string) => void;
   isCountingDown: boolean;
   setAppState: (state: AppState) => void;
+  mode: 'portrait' | 'landscape';
 }
 
-export const CameraFeed: React.FC<CameraFeedProps> = ({ 
-  overlay, 
-  onCapture, 
-  isCountingDown, 
-  setAppState 
+export const CameraFeed: React.FC<CameraFeedProps> = ({
+  overlay,
+  onCapture,
+  isCountingDown,
+  setAppState,
+  mode,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -23,7 +25,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
   const [countdownValue, setCountdownValue] = useState<number>(3);
   const [countdownDuration, setCountdownDuration] = useState<3 | 5 | 10>(3);
 
-  // Função de captura (precisa vir antes do useEffect que a usa)
+  // Função de captura ajustando resolução conforme o modo
   const captureImage = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -32,44 +34,54 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Define output resolution (High Res)
-    const OUTPUT_WIDTH = 1080;
-    const OUTPUT_HEIGHT = 1350; // 4:5 Aspect Ratio
+    // Resolução de saída dependente do modo
+    let OUTPUT_WIDTH: number;
+    let OUTPUT_HEIGHT: number;
+
+    if (mode === 'portrait') {
+      // 4:5 vertical
+      OUTPUT_WIDTH = 1080;
+      OUTPUT_HEIGHT = 1350;
+    } else {
+      // landscape: 5:4 horizontal (mais largo para caber mais gente)
+      OUTPUT_WIDTH = 1350;
+      OUTPUT_HEIGHT = 1080;
+    }
 
     canvas.width = OUTPUT_WIDTH;
     canvas.height = OUTPUT_HEIGHT;
 
-    // 1. Draw Video (Center Crop logic)
+    // 1. Desenhar vídeo com crop central
     const videoAspect = video.videoWidth / video.videoHeight;
     const canvasAspect = OUTPUT_WIDTH / OUTPUT_HEIGHT;
-    
+
     let drawWidth: number;
     let drawHeight: number;
     let offsetX: number;
     let offsetY: number;
 
     if (videoAspect > canvasAspect) {
-      // Video is wider than canvas (crop sides)
+      // Vídeo mais largo que o canvas: corta laterais
       drawHeight = OUTPUT_HEIGHT;
       drawWidth = OUTPUT_HEIGHT * videoAspect;
-      offsetX = (OUTPUT_WIDTH - drawWidth) / 2; // will be negative
+      offsetX = (OUTPUT_WIDTH - drawWidth) / 2;
       offsetY = 0;
     } else {
-      // Video is taller than canvas (crop top/bottom)
+      // Vídeo mais alto que o canvas: corta topo/fundo
       drawWidth = OUTPUT_WIDTH;
       drawHeight = OUTPUT_WIDTH / videoAspect;
       offsetX = 0;
       offsetY = (OUTPUT_HEIGHT - drawHeight) / 2;
     }
 
-    // Mirroring context for selfie mode feel
+    // Espelhar horizontalmente para selfie (sempre)
     ctx.save();
     ctx.translate(OUTPUT_WIDTH, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
     ctx.restore();
 
-    // 2. Draw Overlay
+    // 2. Desenhar moldura (overlay) se houver
     if (overlay) {
       const img = new Image();
       img.src = overlay;
@@ -83,37 +95,39 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     } else {
       finalizeCapture(canvas);
     }
-  }, [overlay, onCapture]);
+  }, [overlay, onCapture, mode]);
 
   const finalizeCapture = (canvas: HTMLCanvasElement) => {
-    // PNG sem parâmetro de qualidade para evitar qualquer compressão com perdas
     const dataUrl = canvas.toDataURL('image/png');
     onCapture(dataUrl);
   };
 
-  // Initialize Camera
+  // Inicializar câmeras
   useEffect(() => {
     const getCameras = async () => {
       try {
-        await navigator.mediaDevices.getUserMedia({ video: true }); // Request permission first
+        await navigator.mediaDevices.getUserMedia({ video: true });
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices
-          .filter(device => device.kind === 'videoinput')
-          .map(d => ({ deviceId: d.deviceId, label: d.label || `Camera ${d.deviceId.slice(0, 5)}...` }));
-        
+          .filter((device) => device.kind === 'videoinput')
+          .map((d) => ({
+            deviceId: d.deviceId,
+            label: d.label || `Camera ${d.deviceId.slice(0, 5)}...`,
+          }));
+
         setDevices(videoDevices);
         if (videoDevices.length > 0) {
           setCurrentDeviceId(videoDevices[0].deviceId);
         }
       } catch (err) {
-        setError("Não foi possível acessar a câmera. Verifique as permissões.");
+        setError('Não foi possível acessar a câmera. Verifique as permissões.');
         console.error(err);
       }
     };
     getCameras();
   }, []);
 
-  // Start Stream
+  // Iniciar stream
   useEffect(() => {
     if (!currentDeviceId) return;
 
@@ -123,16 +137,16 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
           video: {
             deviceId: { exact: currentDeviceId },
             width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          }
+            height: { ideal: 1080 },
+          },
         });
-        
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
       } catch (err) {
-        console.error("Error accessing stream:", err);
-        setError("Erro ao iniciar o vídeo da câmera.");
+        console.error('Error accessing stream:', err);
+        setError('Erro ao iniciar o vídeo da câmera.');
       }
     };
 
@@ -141,18 +155,18 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
   }, [currentDeviceId]);
 
-  // Handle Countdown (usa captureImage já declarado acima)
+  // Contagem regressiva
   useEffect(() => {
     if (!isCountingDown) return;
 
     setCountdownValue(countdownDuration);
     const interval = setInterval(() => {
-      setCountdownValue(prev => {
+      setCountdownValue((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
           captureImage();
@@ -166,7 +180,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
   }, [isCountingDown, captureImage, countdownDuration]);
 
   const switchCamera = () => {
-    const currentIndex = devices.findIndex(d => d.deviceId === currentDeviceId);
+    const currentIndex = devices.findIndex((d) => d.deviceId === currentDeviceId);
     const nextIndex = (currentIndex + 1) % devices.length;
     setCurrentDeviceId(devices[nextIndex].deviceId);
   };
@@ -182,33 +196,40 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     setCountdownDuration(value);
   };
 
+  // Classe de aspecto da área de preview conforme o modo
+  const aspectClass =
+    mode === 'portrait'
+      ? 'aspect-[4/5]'
+      : 'aspect-[5/4]'; // deitado, mais largo
+
   return (
     <div className="relative flex flex-col items-center w-full max-w-[520px]">
-      {/* Container for aspect ratio 4:5 - Mosaic Style (15px radius) */}
-      <div className="relative w-full aspect-[4/5] bg-globo-gray rounded-mosaic overflow-hidden shadow-xl ring-1 ring-black/5">
-        
-        {/* Hidden processing canvas */}
+      {/* Container com proporção variável por modo */}
+      <div
+        className={`relative w-full ${aspectClass} bg-globo-gray rounded-mosaic overflow-hidden shadow-xl ring-1 ring-black/5`}
+      >
+        {/* Canvas escondido para processamento */}
         <canvas ref={canvasRef} className="hidden" />
 
-        {/* Live Video Feed - sempre nítido */}
-        <video 
+        {/* Vídeo ao vivo */}
+        <video
           ref={videoRef}
-          autoPlay 
-          playsInline 
-          muted 
+          autoPlay
+          playsInline
+          muted
           className="absolute top-0 left-0 w-full h-full object-cover transform -scale-x-100"
         />
 
-        {/* Overlay Preview */}
+        {/* Preview da moldura */}
         {overlay && (
-          <img 
-            src={overlay} 
-            alt="Frame Overlay" 
+          <img
+            src={overlay}
+            alt="Frame Overlay"
             className="absolute top-0 left-0 w-full h-full object-cover z-10 pointer-events-none"
           />
         )}
 
-        {/* Countdown lateral (sem escurecer a tela) */}
+        {/* Contagem regressiva */}
         {isCountingDown && (
           <div className="absolute top-4 right-4 z-30 flex flex-col items-center gap-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/80 bg-black/40 px-2 py-0.5 rounded-full">
@@ -222,7 +243,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
           </div>
         )}
 
-        {/* Error State */}
+        {/* Estado de erro */}
         {error && (
           <div className="absolute inset-0 z-40 bg-globo-gray flex flex-col items-center justify-center p-8 text-center">
             <AlertCircle className="w-12 h-12 text-globo-error mb-4" />
@@ -231,10 +252,10 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
         )}
       </div>
 
-      {/* Control Bar */}
+      {/* Barra de controles */}
       <div className="mt-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 z-20">
         {devices.length > 1 && (
-          <button 
+          <button
             onClick={switchCamera}
             disabled={isCountingDown}
             className="p-4 rounded-full bg-white text-globo-blue hover:bg-globo-gray transition-colors border-2 border-globo-blue shadow-sm disabled:opacity-50"
@@ -244,7 +265,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
         )}
 
         {/* Botão principal de captura */}
-        <button 
+        <button
           onClick={handleStartCountdown}
           disabled={isCountingDown || !!error}
           className="group relative flex items-center justify-center rounded-pill bg-globo-blue shadow-lg hover:shadow-xl hover:opacity-90 transition-all disabled:opacity-50 px-10 sm:px-12 py-3.5 sm:py-4"
@@ -276,7 +297,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
                     isActive
                       ? 'bg-globo-blue text-white border-globo-blue'
                       : 'bg-white text-globo-textSec border-black/5 hover:bg-globo-gray/60',
-                    isCountingDown ? 'opacity-60 cursor-not-allowed' : ''
+                    isCountingDown ? 'opacity-60 cursor-not-allowed' : '',
                   ].join(' ')}
                 >
                   {v}s
@@ -285,8 +306,8 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
             })}
           </div>
         </div>
-        
-        {devices.length <= 1 && <div className="w-[58px] hidden sm:block" />} 
+
+        {devices.length <= 1 && <div className="w-[58px] hidden sm:block" />}
       </div>
     </div>
   );
