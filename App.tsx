@@ -68,7 +68,8 @@ type FrameMode = 'portrait' | 'landscape';
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>('setup');
   const [capturedPhoto, setCapturedPhoto] = useState<PhotoData | null>(null);
-  const [overlayImage, setOverlayImage] = useState<string | null>(null);
+  const [portraitOverlay, setPortraitOverlay] = useState<string | null>(null);
+  const [landscapeOverlay, setLandscapeOverlay] = useState<string | null>(null);
   const [galleryPhotos, setGalleryPhotos] = useState<PhotoData[]>([]);
   const [frameMode, setFrameMode] = useState<FrameMode>('portrait');
 
@@ -92,16 +93,30 @@ const App: React.FC = () => {
     setAppState('setup');
   };
 
-  const handleOverlayUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const readOverlayFile = (
+    file: File,
+    setter: React.Dispatch<React.SetStateAction<string | null>>
+  ) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result === 'string') {
+        setter(event.target.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePortraitOverlayUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (typeof event.target?.result === 'string') {
-          setOverlayImage(event.target.result);
-        }
-      };
-      reader.readAsDataURL(file);
+      readOverlayFile(file, setPortraitOverlay);
+    }
+  };
+
+  const handleLandscapeOverlayUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      readOverlayFile(file, setLandscapeOverlay);
     }
   };
 
@@ -141,6 +156,9 @@ const App: React.FC = () => {
   };
 
   const isResult = appState === 'result';
+
+  // Escolhe a moldura correta para o modo atual
+  const currentOverlay = frameMode === 'portrait' ? portraitOverlay : landscapeOverlay;
 
   return (
     <div className="min-h-screen flex flex-col bg-globo-gradient overflow-hidden relative">
@@ -191,19 +209,34 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white border border-white/40 px-4 sm:px-6 py-2 sm:py-3 rounded-pill flex items-center gap-2 transition-all text-xs sm:text-sm font-medium shadow-sm hover:shadow-md">
-              <ImageIcon size={16} className="sm:hidden" />
-              <ImageIcon size={18} className="hidden sm:block" />
-              <span className="whitespace-nowrap">
-                {overlayImage ? 'Trocar moldura (.png)' : 'Carregar moldura (.png)'}
-              </span>
-              <input
-                type="file"
-                accept="image/png"
-                className="hidden"
-                onChange={handleOverlayUpload}
-              />
-            </label>
+            {/* Upload das duas molduras */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white border border-white/40 px-3 sm:px-4 py-1.5 sm:py-2 rounded-pill flex items-center gap-2 transition-all text-[11px] sm:text-xs font-medium shadow-sm hover:shadow-md">
+                <ImageIcon size={14} />
+                <span className="whitespace-nowrap">
+                  {portraitOverlay ? 'Trocar moldura em pé' : 'Moldura em pé (.png)'}
+                </span>
+                <input
+                  type="file"
+                  accept="image/png"
+                  className="hidden"
+                  onChange={handlePortraitOverlayUpload}
+                />
+              </label>
+
+              <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white border border-white/40 px-3 sm:px-4 py-1.5 sm:py-2 rounded-pill flex items-center gap-2 transition-all text-[11px] sm:text-xs font-medium shadow-sm hover:shadow-md">
+                <ImageIcon size={14} />
+                <span className="whitespace-nowrap">
+                  {landscapeOverlay ? 'Trocar moldura deitada' : 'Moldura deitada (.png)'}
+                </span>
+                <input
+                  type="file"
+                  accept="image/png"
+                  className="hidden"
+                  onChange={handleLandscapeOverlayUpload}
+                />
+              </label>
+            </div>
           </div>
         )}
       </header>
@@ -225,7 +258,7 @@ const App: React.FC = () => {
                 <div className="flex-1 flex justify-center">
                   <div className="relative w-full max-w-[540px] sm:max-w-[620px]">
                     <CameraFeed
-                      overlay={overlayImage}
+                      overlay={currentOverlay}
                       onCapture={handleCapture}
                       isCountingDown={appState === 'countdown'}
                       setAppState={setAppState}
