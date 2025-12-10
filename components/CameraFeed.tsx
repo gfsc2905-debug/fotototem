@@ -25,7 +25,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
   const [countdownValue, setCountdownValue] = useState<number>(3);
   const [countdownDuration, setCountdownDuration] = useState<3 | 5 | 10>(3);
 
-  // Função de captura ajustando resolução conforme o modo
+  // Captura com tamanho EXATO do frame conforme o modo
   const captureImage = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -34,24 +34,24 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Resolução de saída dependente do modo
+    // Tamanhos exatos dos frames
     let OUTPUT_WIDTH: number;
     let OUTPUT_HEIGHT: number;
 
     if (mode === 'portrait') {
-      // 4:5 vertical
+      // Frame em pé: 1080 x 1440
       OUTPUT_WIDTH = 1080;
-      OUTPUT_HEIGHT = 1350;
+      OUTPUT_HEIGHT = 1440;
     } else {
-      // landscape: 5:4 horizontal (mais largo para caber mais gente)
-      OUTPUT_WIDTH = 1350;
+      // Frame deitado: 1440 x 1080
+      OUTPUT_WIDTH = 1440;
       OUTPUT_HEIGHT = 1080;
     }
 
     canvas.width = OUTPUT_WIDTH;
     canvas.height = OUTPUT_HEIGHT;
 
-    // 1. Desenhar vídeo com crop central
+    // 1. Desenhar vídeo com crop central mantendo proporção
     const videoAspect = video.videoWidth / video.videoHeight;
     const canvasAspect = OUTPUT_WIDTH / OUTPUT_HEIGHT;
 
@@ -61,27 +61,27 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     let offsetY: number;
 
     if (videoAspect > canvasAspect) {
-      // Vídeo mais largo que o canvas: corta laterais
+      // Vídeo mais largo: corta laterais
       drawHeight = OUTPUT_HEIGHT;
       drawWidth = OUTPUT_HEIGHT * videoAspect;
       offsetX = (OUTPUT_WIDTH - drawWidth) / 2;
       offsetY = 0;
     } else {
-      // Vídeo mais alto que o canvas: corta topo/fundo
+      // Vídeo mais alto: corta topo/fundo
       drawWidth = OUTPUT_WIDTH;
       drawHeight = OUTPUT_WIDTH / videoAspect;
       offsetX = 0;
       offsetY = (OUTPUT_HEIGHT - drawHeight) / 2;
     }
 
-    // Espelhar horizontalmente para selfie (sempre)
+    // Espelhar horizontalmente para selfie
     ctx.save();
     ctx.translate(OUTPUT_WIDTH, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
     ctx.restore();
 
-    // 2. Desenhar moldura (overlay) se houver
+    // 2. Desenhar moldura (overlay), assumindo mesmo tamanho do frame
     if (overlay) {
       const img = new Image();
       img.src = overlay;
@@ -196,22 +196,29 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     setCountdownDuration(value);
   };
 
-  // Classe de aspecto da área de preview conforme o modo
+  // Proporção do preview alinhada com o tamanho exato do frame
+  // Em pé: 1080x1440 -> 3:4  |  Deitado: 1440x1080 -> 4:3
   const aspectClass =
     mode === 'portrait'
-      ? 'aspect-[4/5]'
-      : 'aspect-[5/4]'; // deitado, mais largo
+      ? 'aspect-[3/4]'
+      : 'aspect-[4/3]';
+
+  // Aumentar tamanho máximo da área de preview
+  const maxWidthClass =
+    mode === 'portrait'
+      ? 'max-w-[520px] sm:max-w-[600px] lg:max-w-[720px]'
+      : 'max-w-[640px] sm:max-w-[760px] lg:max-w-[880px]';
 
   return (
-    <div className="relative flex flex-col items-center w-full max-w-[520px]">
-      {/* Container com proporção variável por modo */}
+    <div className={`relative flex flex-col items-center w-full ${maxWidthClass}`}>
+      {/* Container com proporção exata do frame */}
       <div
         className={`relative w-full ${aspectClass} bg-globo-gray rounded-mosaic overflow-hidden shadow-xl ring-1 ring-black/5`}
       >
         {/* Canvas escondido para processamento */}
         <canvas ref={canvasRef} className="hidden" />
 
-        {/* Vídeo ao vivo */}
+        {/* Vídeo ao vivo ocupando todo o quadro */}
         <video
           ref={videoRef}
           autoPlay
@@ -220,7 +227,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
           className="absolute top-0 left-0 w-full h-full object-cover transform -scale-x-100"
         />
 
-        {/* Preview da moldura */}
+        {/* Preview da moldura, alinhada ao tamanho do frame */}
         {overlay && (
           <img
             src={overlay}
