@@ -168,6 +168,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
       setCountdownValue((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
+          // Chegou no fim: zera e dispara a captura imediatamente
           captureImage();
           return 0;
         }
