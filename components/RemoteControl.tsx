@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Camera as CameraIcon, Wifi, WifiOff, RefreshCw, Clock, Smartphone } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
@@ -11,10 +11,11 @@ export const RemoteControl: React.FC = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [lastStatus, setLastStatus] = useState<string | null>(null);
-  const [channelName, setChannelName] = useState<string | null>(null);
 
   const [remoteMode, setRemoteMode] = useState<FrameMode>('portrait');
   const [remoteTimer, setRemoteTimer] = useState<TimerValue>(3);
+
+  const channelRef = useRef<ReturnType<NonNullable<typeof supabase>['channel']> | null>(null);
 
   const handleConnect = () => {
     const code = sessionCodeInput.trim().toUpperCase();
@@ -26,19 +27,21 @@ export const RemoteControl: React.FC = () => {
     setLastStatus('Conectando ao totem...');
   };
 
+  // Cria e gerencia o canal quando o sessionCode muda
   useEffect(() => {
-    if (!supabase) {
-      setLastStatus('Supabase não está configurado.');
+    if (!supabase || !sessionCode) {
       return;
     }
-    if (!sessionCode) {
-      return;
+
+    // Limpa canal anterior, se existir
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
     }
 
     const name = `fotototem-remote-${sessionCode}`;
-    setChannelName(name);
-
     const channel = supabase.channel(name);
+    channelRef.current = channel;
 
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
@@ -51,9 +54,11 @@ export const RemoteControl: React.FC = () => {
     });
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
       setIsConnected(false);
-      setChannelName(null);
     };
   }, [sessionCode]);
 
@@ -61,9 +66,9 @@ export const RemoteControl: React.FC = () => {
     action: 'take_photo' | 'ping' | 'set_mode' | 'set_timer',
     extra?: { mode?: FrameMode; timer?: TimerValue }
   ) => {
-    if (!supabase || !isConnected || !channelName) return;
+    if (!supabase || !isConnected || !channelRef.current) return;
 
-    await supabase.channel(channelName).send({
+    await channelRef.current.send({
       type: 'broadcast',
       event: 'remote-command',
       payload: {
@@ -91,8 +96,11 @@ export const RemoteControl: React.FC = () => {
   };
 
   const handleDisconnect = () => {
+    if (supabase && channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
     setSessionCode(null);
-    setChannelName(null);
     setIsConnected(false);
     setLastStatus('Desconectado do totem.');
   };
