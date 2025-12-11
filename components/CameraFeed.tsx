@@ -28,7 +28,6 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [countdownValue, setCountdownValue] = useState<number>(3);
-  const [internalDevices, setInternalDevices] = useState<CameraDevice[]>([]);
 
   // Captura com tamanho EXATO do frame conforme o modo
   const captureImage = useCallback(() => {
@@ -99,7 +98,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     onCapture(dataUrl);
   };
 
-  // Inicializar câmeras
+  // Inicializar câmeras e informar para o App
   useEffect(() => {
     const getCameras = async () => {
       try {
@@ -112,9 +111,9 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
             label: d.label || `Camera ${d.deviceId.slice(0, 5)}...`,
           }));
 
-        setInternalDevices(videoDevices);
         onDevicesChange(videoDevices);
 
+        // Se ainda não há câmera ativa, seleciona a primeira
         if (!activeDeviceId && videoDevices.length > 0) {
           onActiveDeviceChange(videoDevices[0].deviceId);
         }
@@ -126,7 +125,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     getCameras();
   }, [activeDeviceId, onActiveDeviceChange, onDevicesChange, onErrorChange]);
 
-  // Iniciar stream
+  // Iniciar stream sempre que activeDeviceId mudar
   useEffect(() => {
     if (!activeDeviceId) return;
 

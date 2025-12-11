@@ -176,9 +176,16 @@ const App: React.FC = () => {
   };
 
   const handleSwitchCamera = () => {
-    if (!devices.length || !activeDeviceId) return;
+    if (!devices.length) return;
+
+    if (!activeDeviceId) {
+      setActiveDeviceId(devices[0].deviceId);
+      return;
+    }
+
     const currentIndex = devices.findIndex((d) => d.deviceId === activeDeviceId);
-    const nextIndex = (currentIndex + 1) % devices.length;
+    const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+    const nextIndex = (safeIndex + 1) % devices.length;
     setActiveDeviceId(devices[nextIndex].deviceId);
   };
 
@@ -274,7 +281,7 @@ const App: React.FC = () => {
         ) : (
           <>
             {/* Captura: preview à esquerda, texto+controles à direita */}
-            <div className="flex-1 w-full flex items-center justify-center px-4 sm:px-6 lg:px-10 pt-20 sm:pt-24 pb-6">
+            <div className="flex-1 w-full flex items-center justify-center px-4 sm:px-6 lg:px-10 pt-20 sm:pt-24 pb-2 sm:pb-3">
               <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start lg:items-center justify-center gap-8 lg:gap-12 xl:gap-16 animate-in fade-in slide-in-from-bottom-8 duration-500">
                 {/* Esquerda: preview */}
                 <div className="w-full lg:w-1/2 flex justify-center">
@@ -381,10 +388,8 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Galeria */}
-            <div className="pb-4 sm:pb-6">
-              <Gallery photos={galleryPhotos} onSelect={handleSelectFromGallery} />
-            </div>
+            {/* Galeria full-width na parte inferior */}
+            <Gallery photos={galleryPhotos} onSelect={handleSelectFromGallery} />
           </>
         )}
       </main>
