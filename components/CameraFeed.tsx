@@ -41,9 +41,11 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     let OUTPUT_HEIGHT: number;
 
     if (mode === 'portrait') {
+      // Novo formato em pé: 1080x1920 (largura x altura)
       OUTPUT_WIDTH = 1080;
-      OUTPUT_HEIGHT = 1440;
+      OUTPUT_HEIGHT = 1920;
     } else {
+      // Mantém o deitado como já estava: 1440x1080
       OUTPUT_WIDTH = 1440;
       OUTPUT_HEIGHT = 1080;
     }
@@ -177,8 +179,8 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     return () => clearInterval(interval);
   }, [isCountingDown, captureImage, countdownDuration]);
 
-  // Proporção do preview alinhada com o tamanho exato do frame
-  const aspectClass = mode === 'portrait' ? 'aspect-[3/4]' : 'aspect-[4/3]';
+  // Proporção visual do preview (não precisa ser exatamente a mesma da captura, mas mantive parecido)
+  const aspectClass = mode === 'portrait' ? 'aspect-[9/16]' : 'aspect-[4/3]';
 
   return (
     <div className="relative flex flex-col items-center w-full h-full">
