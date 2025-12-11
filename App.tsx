@@ -140,9 +140,7 @@ const App: React.FC = () => {
         if (prev === null) return null;
         if (prev <= 1) {
           clearInterval(interval);
-          // Próximo valor será 0, e já disparamos a captura imediatamente
           const next = 0;
-          // Chama captura na mesma hora em que chegamos em 0
           if (cameraRef.current) {
             cameraRef.current.capture();
           }
@@ -266,7 +264,6 @@ const App: React.FC = () => {
     setActiveDeviceId(devices[nextIndex].deviceId);
   };
 
-  // Largura atual do preview conforme modo
   const currentPreviewWidth =
     frameMode === 'portrait' ? portraitPreviewWidth : landscapePreviewWidth;
 
@@ -378,7 +375,7 @@ const App: React.FC = () => {
         ) : (
           <>
             {/* Captura: preview à esquerda, texto+controles à direita */}
-            <div className="flex-1 w-full flex items_CENTER justify-center px-4 sm:px-6 lg:px-10 pt-20 sm:pt-24 pb-2 sm:pb-3">
+            <div className="flex-1 w-full flex items-center justify-center px-4 sm:px-6 lg:px-10 pt-20 sm:pt-24 pb-2 sm:pb-3">
               <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start lg:items-center justify-center gap-8 lg:gap-12 xl:gap-16 animate-in fade-in slide-in-from-bottom-8 duration-500">
                 {/* Esquerda: preview em container redimensionável */}
                 <div className="w-full lg:w-auto flex justify-center lg:justify-start">
@@ -409,7 +406,7 @@ const App: React.FC = () => {
                 </div>
 
                 {/* Direita: texto + botões + timer */}
-                <div className="w-full lg:flex-1 flex flex-col justify-center gap-6 text_WHITE">
+                <div className="w-full lg:flex-1 flex flex-col justify-center gap-6 text-white">
                   <div className="text-center lg:text-left">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/10 text-white text-xs sm:text-sm font-medium mb-3">
                       <Sparkles size={16} />
@@ -444,9 +441,9 @@ const App: React.FC = () => {
                       </button>
 
                       {/* Timer */}
-                      <div className="flex items-center gap-2 bg-white/15 rounded-pill px-3 py-1.5 shadow-sm border border_WHITE/30">
+                      <div className="flex items-center gap-2 bg-white/15 rounded-pill px-3 py-1.5 shadow-sm border border-white/30">
                         <Clock size={16} className="text-white" />
-                        <span className="text-[11px] text_WHITE/80 mr-1 hidden sm:inline">
+                        <span className="text-[11px] text-white/80 mr-1 hidden sm:inline">
                           Timer
                         </span>
                         <div className="flex gap-1">
@@ -462,8 +459,8 @@ const App: React.FC = () => {
                                 className={[
                                   'px-2 py-1 rounded-full text-[11px] font-semibold transition-all border',
                                   isActive
-                                    ? 'bg-white text-globo-blue border_WHITE'
-                                    : 'bg-transparent text_WHITE/80 border_WHITE/30 hover:bg-white/10',
+                                    ? 'bg-white text-globo-blue border-white'
+                                    : 'bg-transparent text-white/80 border-white/30 hover:bg-white/10',
                                   appState === 'countdown' ? 'opacity-60 cursor-not-allowed' : '',
                                 ].join(' ')}
                               >
@@ -481,7 +478,7 @@ const App: React.FC = () => {
                         type="button"
                         onClick={handleSwitchCamera}
                         disabled={appState === 'countdown'}
-                        className="self-start inline-flex items-center gap-2 px-4 py-2 rounded-pill bg-white/10 border border_WHITE/40 text_WHITE text-xs sm:text-sm font-medium hover:bg_WHITE/20 transition-all disabled:opacity-60"
+                        className="self-start inline-flex items-center gap-2 px-4 py-2 rounded-pill bg-white/10 border border-white/40 text-white text-xs sm:text-sm font-medium hover:bg-white/20 transition-all disabled:opacity-60"
                       >
                         <SwitchCamera size={18} />
                         <span>Trocar câmera</span>
