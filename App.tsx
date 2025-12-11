@@ -5,6 +5,7 @@ import { PhotoData, AppState, CameraDevice } from './types';
 import { Image as ImageIcon, Sparkles, Camera as CameraIcon, Clock, SwitchCamera } from 'lucide-react';
 import { Gallery } from './components/Gallery';
 import { supabase } from './supabaseClient';
+import { RemoteControl } from './components/RemoteControl';
 
 const GloboLogo = () => (
   <svg
@@ -62,10 +63,20 @@ const GloboLogo = () => (
 
 const MAX_GALLERY_ITEMS = 20;
 const BUCKET_NAME = 'fotototem';
+const CHANNEL_NAME = 'fotototem-remote-1';
 
 type FrameMode = 'portrait' | 'landscape';
 
 const App: React.FC = () => {
+  // Verifica se é modo remoto pela query string (?view=remote)
+  const searchParams = new URLSearchParams(window.location.search);
+  const isRemoteView = searchParams.get('view') === 'remote';
+
+  // Se for controle remoto, mostra só a tela de controle
+  if (isRemoteView) {
+    return <RemoteControl />;
+  }
+
   const [appState, setAppState] = useState<AppState>('setup');
   const [capturedPhoto, setCapturedPhoto] = useState<PhotoData | null>(null);
   const [portraitOverlay, setPortraitOverlay] = useState<string | null>(null);
@@ -78,18 +89,36 @@ const App: React.FC = () => {
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // Larguras independentes para em pé e deitado
   const [portraitPreviewWidth, setPortraitPreviewWidth] = useState<number>(600);
   const [landscapePreviewWidth, setLandscapePreviewWidth] = useState<number>(800);
 
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
   const isResizingRef = useRef(false);
 
-  // Contagem regressiva para o overlay global
   const [globalCountdownValue, setGlobalCountdownValue] = useState<number | null>(null);
 
-  // Ref para controlar a captura no CameraFeed
   const cameraRef = useRef<CameraFeedHandle | null>(null);
+
+  // Conexão com o canal de controle remoto (apenas no totem)
+  useEffect(() => {
+    if (!supabase) return;
+
+    const channel = supabase
+      .channel(CHANNEL_NAME)
+      .on('broadcast', { event: 'remote-command' }, (payload) => {
+        const action = (payload.payload as { action?: string }).action;
+        if (action === 'take_photo') {
+          handleStartCountdown();
+        }
+        // podemos ignorar outros comandos por enquanto
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraError, appState, countdownDuration]);
 
   useEffect(() => {
     const handleMouseDown = (event: MouseEvent) => {
@@ -127,7 +156,6 @@ const App: React.FC = () => {
     };
   }, [frameMode]);
 
-  // Atualiza a contagem global e dispara captura exata em 0
   useEffect(() => {
     if (appState !== 'countdown') {
       setGlobalCountdownValue(null);
@@ -269,7 +297,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-globo-gradient overflow-hidden relative">
-      {/* Overlay global do timer */}
       {appState === 'countdown' && globalCountdownValue !== null && (
         <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
           <div className="flex flex-col items-center gap-4">
@@ -285,7 +312,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Header */}
       <header className="w-full px-4 sm:px-8 py-3 sm:py-4 flex justify-between items-center z-20 absolute top-0 left-0">
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="bg-white rounded-full p-1 shadow-sm">
@@ -303,7 +329,6 @@ const App: React.FC = () => {
 
         {appState === 'setup' && (
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Modo */}
             <div className="flex items-center gap-1 bg-white/10 border border-white/40 rounded-pill px-2 py-1 sm:px-3 sm:py-1.5 text-[11px] sm:text-xs text-white shadow-sm">
               <span className="hidden sm:inline text-white/80 mr-1">Modo</span>
               <button
@@ -332,7 +357,6 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            {/* Upload molduras */}
             <div className="flex flex-col sm:flex-row gap-2">
               <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white border border-white/40 px-3 sm:px-4 py-1.5 sm:py-2 rounded-pill flex items-center gap-2 transition-all text-[11px] sm:text-xs font-medium shadow-sm hover:shadow-md">
                 <ImageIcon size={14} />
@@ -364,7 +388,6 @@ const App: React.FC = () => {
         )}
       </header>
 
-      {/* Main */}
       <main className="flex-1 w-full flex flex-col">
         {isResult && capturedPhoto ? (
           <ResultScreen
@@ -374,10 +397,8 @@ const App: React.FC = () => {
           />
         ) : (
           <>
-            {/* Captura: preview à esquerda, texto+controles à direita */}
             <div className="flex-1 w-full flex items-center justify-center px-4 sm:px-6 lg:px-10 pt-20 sm:pt-24 pb-2 sm:pb-3">
               <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start lg:items-center justify-center gap-8 lg:gap-12 xl:gap-16 animate-in fade-in slide-in-from-bottom-8 duration-500">
-                {/* Esquerda: preview em container redimensionável */}
                 <div className="w-full lg:w-auto flex justify-center lg:justify-start">
                   <div
                     ref={previewContainerRef}
@@ -405,7 +426,6 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Direita: texto + botões + timer */}
                 <div className="w-full lg:flex-1 flex flex-col justify-center gap-6 text-white">
                   <div className="text-center lg:text-left">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/10 text-white text-xs sm:text-sm font-medium mb-3">
@@ -425,10 +445,8 @@ const App: React.FC = () => {
                     Dica: centralize-se no quadro e aguarde a contagem regressiva antes da captura.
                   </p>
 
-                  {/* Controles principais */}
                   <div className="flex flex-col gap-4">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                      {/* Botão Tirar Foto */}
                       <button
                         onClick={handleStartCountdown}
                         disabled={appState === 'countdown' || !!cameraError}
@@ -440,7 +458,6 @@ const App: React.FC = () => {
                         </div>
                       </button>
 
-                      {/* Timer */}
                       <div className="flex items-center gap-2 bg-white/15 rounded-pill px-3 py-1.5 shadow-sm border border-white/30">
                         <Clock size={16} className="text-white" />
                         <span className="text-[11px] text-white/80 mr-1 hidden sm:inline">
@@ -472,7 +489,6 @@ const App: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Botão trocar câmera */}
                     {devices.length > 1 && (
                       <button
                         type="button"
@@ -495,7 +511,6 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Galeria full-width na parte inferior */}
             <Gallery photos={galleryPhotos} onSelect={handleSelectFromGallery} />
           </>
         )}
