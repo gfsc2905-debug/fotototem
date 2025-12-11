@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { CameraFeed } from './components/CameraFeed';
+import { CameraFeed, CameraFeedHandle } from './components/CameraFeed';
 import { ResultScreen } from './components/ResultScreen';
 import { PhotoData, AppState, CameraDevice } from './types';
 import { Image as ImageIcon, Sparkles, Camera as CameraIcon, Clock, SwitchCamera } from 'lucide-react';
@@ -85,8 +85,11 @@ const App: React.FC = () => {
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
   const isResizingRef = useRef(false);
 
-  // Contagem regressiva para o overlay global (mostramos o número em App)
+  // Contagem regressiva para o overlay global
   const [globalCountdownValue, setGlobalCountdownValue] = useState<number | null>(null);
+
+  // Ref para controlar a captura no CameraFeed
+  const cameraRef = useRef<CameraFeedHandle | null>(null);
 
   useEffect(() => {
     const handleMouseDown = (event: MouseEvent) => {
@@ -106,7 +109,6 @@ const App: React.FC = () => {
       const rect = previewContainerRef.current.getBoundingClientRect();
       const newWidth = rect.width;
 
-      // Salva largura de acordo com o modo atual
       if (frameMode === 'portrait') {
         setPortraitPreviewWidth(newWidth);
       } else {
@@ -125,7 +127,7 @@ const App: React.FC = () => {
     };
   }, [frameMode]);
 
-  // Atualiza o valor da contagem global enquanto estiver contando
+  // Atualiza a contagem global e dispara captura exata em 0
   useEffect(() => {
     if (appState !== 'countdown') {
       setGlobalCountdownValue(null);
@@ -138,7 +140,13 @@ const App: React.FC = () => {
         if (prev === null) return null;
         if (prev <= 1) {
           clearInterval(interval);
-          return 0;
+          // Próximo valor será 0, e já disparamos a captura imediatamente
+          const next = 0;
+          // Chama captura na mesma hora em que chegamos em 0
+          if (cameraRef.current) {
+            cameraRef.current.capture();
+          }
+          return next;
         }
         return prev - 1;
       });
@@ -370,7 +378,7 @@ const App: React.FC = () => {
         ) : (
           <>
             {/* Captura: preview à esquerda, texto+controles à direita */}
-            <div className="flex-1 w-full flex items-center justify-center px-4 sm:px-6 lg:px-10 pt-20 sm:pt-24 pb-2 sm:pb-3">
+            <div className="flex-1 w-full flex items_CENTER justify-center px-4 sm:px-6 lg:px-10 pt-20 sm:pt-24 pb-2 sm:pb-3">
               <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start lg:items-center justify-center gap-8 lg:gap-12 xl:gap-16 animate-in fade-in slide-in-from-bottom-8 duration-500">
                 {/* Esquerda: preview em container redimensionável */}
                 <div className="w-full lg:w-auto flex justify-center lg:justify-start">
@@ -386,6 +394,7 @@ const App: React.FC = () => {
                     }}
                   >
                     <CameraFeed
+                      ref={cameraRef}
                       overlay={currentOverlay}
                       onCapture={handleCapture}
                       isCountingDown={appState === 'countdown'}
@@ -400,7 +409,7 @@ const App: React.FC = () => {
                 </div>
 
                 {/* Direita: texto + botões + timer */}
-                <div className="w-full lg:flex-1 flex flex-col justify-center gap-6 text-white">
+                <div className="w-full lg:flex-1 flex flex-col justify-center gap-6 text_WHITE">
                   <div className="text-center lg:text-left">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/10 text-white text-xs sm:text-sm font-medium mb-3">
                       <Sparkles size={16} />
@@ -435,9 +444,9 @@ const App: React.FC = () => {
                       </button>
 
                       {/* Timer */}
-                      <div className="flex items-center gap-2 bg-white/15 rounded-pill px-3 py-1.5 shadow-sm border border-white/30">
+                      <div className="flex items-center gap-2 bg-white/15 rounded-pill px-3 py-1.5 shadow-sm border border_WHITE/30">
                         <Clock size={16} className="text-white" />
-                        <span className="text-[11px] text-white/80 mr-1 hidden sm:inline">
+                        <span className="text-[11px] text_WHITE/80 mr-1 hidden sm:inline">
                           Timer
                         </span>
                         <div className="flex gap-1">
@@ -453,8 +462,8 @@ const App: React.FC = () => {
                                 className={[
                                   'px-2 py-1 rounded-full text-[11px] font-semibold transition-all border',
                                   isActive
-                                    ? 'bg-white text-globo-blue border-white'
-                                    : 'bg-transparent text-white/80 border-white/30 hover:bg-white/10',
+                                    ? 'bg-white text-globo-blue border_WHITE'
+                                    : 'bg-transparent text_WHITE/80 border_WHITE/30 hover:bg-white/10',
                                   appState === 'countdown' ? 'opacity-60 cursor-not-allowed' : '',
                                 ].join(' ')}
                               >
@@ -472,7 +481,7 @@ const App: React.FC = () => {
                         type="button"
                         onClick={handleSwitchCamera}
                         disabled={appState === 'countdown'}
-                        className="self-start inline-flex items-center gap-2 px-4 py-2 rounded-pill bg-white/10 border border-white/40 text-white text-xs sm:text-sm font-medium hover:bg-white/20 transition-all disabled:opacity-60"
+                        className="self-start inline-flex items-center gap-2 px-4 py-2 rounded-pill bg-white/10 border border_WHITE/40 text_WHITE text-xs sm:text-sm font-medium hover:bg_WHITE/20 transition-all disabled:opacity-60"
                       >
                         <SwitchCamera size={18} />
                         <span>Trocar câmera</span>
