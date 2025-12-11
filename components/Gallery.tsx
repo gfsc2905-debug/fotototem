@@ -8,7 +8,7 @@ interface GalleryProps {
 }
 
 export const Gallery: React.FC<GalleryProps> = ({ photos, onSelect }) => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false); // começa recolhida
 
   if (!photos.length) return null;
 
