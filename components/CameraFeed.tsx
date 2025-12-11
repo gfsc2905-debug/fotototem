@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { CameraDevice } from '../types';
-import { AlertCircle } from 'lucide-react';
 
 interface CameraFeedProps {
   overlay: string | null;
@@ -179,18 +178,10 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
   }, [isCountingDown, captureImage, countdownDuration]);
 
   // Proporção do preview alinhada com o tamanho exato do frame
-  const aspectClass =
-    mode === 'portrait'
-      ? 'aspect-[3/4]'
-      : 'aspect-[4/3]';
-
-  const maxWidthClass =
-    mode === 'portrait'
-      ? 'max-w-[520px] sm:max-w-[600px] lg:max-w-[720px]'
-      : 'max-w-[640px] sm:max-w-[760px] lg:max-w-[880px]';
+  const aspectClass = mode === 'portrait' ? 'aspect-[3/4]' : 'aspect-[4/3]';
 
   return (
-    <div className={`relative flex flex-col items-center w-full ${maxWidthClass}`}>
+    <div className="relative flex flex-col items-center w-full h-full">
       <div
         className={`relative w-full ${aspectClass} bg-globo-gray rounded-mosaic overflow-hidden shadow-xl ring-1 ring-black/5`}
       >

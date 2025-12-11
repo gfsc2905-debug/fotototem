@@ -283,23 +283,34 @@ const App: React.FC = () => {
             {/* Captura: preview à esquerda, texto+controles à direita */}
             <div className="flex-1 w-full flex items-center justify-center px-4 sm:px-6 lg:px-10 pt-20 sm:pt-24 pb-2 sm:pb-3">
               <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start lg:items-center justify-center gap-8 lg:gap-12 xl:gap-16 animate-in fade-in slide-in-from-bottom-8 duration-500">
-                {/* Esquerda: preview */}
-                <div className="w-full lg:w-1/2 flex justify-center">
-                  <CameraFeed
-                    overlay={currentOverlay}
-                    onCapture={handleCapture}
-                    isCountingDown={appState === 'countdown'}
-                    mode={frameMode}
-                    countdownDuration={countdownDuration}
-                    activeDeviceId={activeDeviceId}
-                    onDevicesChange={setDevices}
-                    onActiveDeviceChange={setActiveDeviceId}
-                    onErrorChange={setCameraError}
-                  />
+                {/* Esquerda: preview em container redimensionável */}
+                <div className="w-full lg:w-auto flex justify-center lg:justify-start">
+                  <div
+                    className="bg-transparent"
+                    style={{
+                      width: '100%',
+                      maxWidth: '900px',
+                      minWidth: '260px',
+                      resize: 'horizontal',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <CameraFeed
+                      overlay={currentOverlay}
+                      onCapture={handleCapture}
+                      isCountingDown={appState === 'countdown'}
+                      mode={frameMode}
+                      countdownDuration={countdownDuration}
+                      activeDeviceId={activeDeviceId}
+                      onDevicesChange={setDevices}
+                      onActiveDeviceChange={setActiveDeviceId}
+                      onErrorChange={setCameraError}
+                    />
+                  </div>
                 </div>
 
                 {/* Direita: texto + botões + timer */}
-                <div className="w-full lg:w-1/2 flex flex-col justify-center gap-6 text-white">
+                <div className="w-full lg:flex-1 flex flex-col justify-center gap-6 text-white">
                   <div className="text-center lg:text-left">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/10 text-white text-xs sm:text-sm font-medium mb-3">
                       <Sparkles size={16} />
