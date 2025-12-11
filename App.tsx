@@ -251,25 +251,23 @@ const App: React.FC = () => {
           />
         ) : (
           <>
-            {/* Tela de captura 100% azul, conteúdo centralizado */}
-            <div className="flex-1 w-full flex items-center justify-center px-3 sm:px-6 lg:px-10 pt-20 sm:pt-24 pb-6">
-              <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 xl:gap-20 animate-in fade-in slide-in-from-bottom-8 duration-500">
+            {/* Tela de captura 100% azul, layout preview esquerda / controles + texto direita */}
+            <div className="flex-1 w-full flex items-center justify-center px-4 sm:px-6 lg:px-10 pt-20 sm:pt-24 pb-6">
+              <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start lg:items-center justify-center gap-8 lg:gap-12 xl:gap-16 animate-in fade-in slide-in-from-bottom-8 duration-500">
                 {/* Esquerda: Live preview grande */}
-                <div className="flex-1 flex justify-center">
-                  <div className="relative w-full max-w-[540px] sm:max-w-[620px]">
-                    <CameraFeed
-                      overlay={currentOverlay}
-                      onCapture={handleCapture}
-                      isCountingDown={appState === 'countdown'}
-                      setAppState={setAppState}
-                      mode={frameMode}
-                    />
-                  </div>
+                <div className="w-full lg:w-1/2 flex justify-center">
+                  <CameraFeed
+                    overlay={currentOverlay}
+                    onCapture={handleCapture}
+                    isCountingDown={appState === 'countdown'}
+                    setAppState={setAppState}
+                    mode={frameMode}
+                  />
                 </div>
 
-                {/* Direita: instruções em branco */}
-                <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left space-y-6 max-w-xl w-full text-white">
-                  <div>
+                {/* Direita: texto + controles (timer, botão de foto, etc) */}
+                <div className="w-full lg:w-1/2 flex flex-col justify-center gap-6 text-white">
+                  <div className="text-center lg:text-left">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/10 text-white text-xs sm:text-sm font-medium mb-3">
                       <Sparkles size={16} />
                       <span>Registre sua presença com uma foto especial</span>
@@ -277,14 +275,21 @@ const App: React.FC = () => {
                     <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 leading-tight">
                       Que bom ter você aqui.
                     </h2>
-                    <p className="text-white/85 text-sm sm:text-base lg:text-lg max-w-xl">
+                    <p className="text-white/85 text-sm sm:text-base lg:text-lg max-w-xl mx-auto lg:mx-0">
                       Posicione-se em frente à câmera, ajuste a moldura e clique em{' '}
                       <span className="font-semibold">“Tirar Foto”</span> para registrar esse momento com a Globo.
                     </p>
                   </div>
-                  <p className="text-xs sm:text-sm text-white/80 max-w-sm">
-                    Dica: centralize-se no quadro e aguarde a contagem regressiva antes da captura.
-                  </p>
+
+                  {/* Controles principais abaixo do texto, alinhados à esquerda em telas grandes */}
+                  <div className="flex flex-col gap-4 text-center lg:text-left">
+                    <p className="text-xs sm:text-sm text-white/80 max-w-sm mx-auto lg:mx-0">
+                      Dica: centralize-se no quadro e aguarde a contagem regressiva antes da captura.
+                    </p>
+                    {/* Como os controles (timer, botão, troca de câmera) já estão dentro do CameraFeed,
+                        aqui mantemos apenas o texto / instrução.
+                        Se você quiser, posso mover os controles para cá em um próximo passo. */}
+                  </div>
                 </div>
               </div>
             </div>
