@@ -62,7 +62,7 @@ export const RemoteControl: React.FC = () => {
   }, [sessionCode]);
 
   const sendRemoteCommand = async (
-    action: 'take_photo' | 'ping' | 'set_mode' | 'set_timer',
+    action: 'take_photo' | 'ping' | 'set_mode' | 'set_timer' | 'reset',
     extra?: { mode?: FrameMode; timer?: TimerValue }
   ) => {
     if (!supabase || !isConnected || !channelRef.current) return;
@@ -85,6 +85,12 @@ export const RemoteControl: React.FC = () => {
     await sendRemoteCommand('take_photo');
     setIsSending(false);
     setLastStatus('Comando enviado! Veja a tela do totem.');
+  };
+
+  const handleReset = async () => {
+    if (!supabase || !isConnected) return;
+    setLastStatus('Voltando o totem para a tela inicial...');
+    await sendRemoteCommand('reset');
   };
 
   const handlePing = async () => {
@@ -264,11 +270,11 @@ export const RemoteControl: React.FC = () => {
           {isSending ? 'Enviando...' : 'Tirar Foto'}
         </button>
 
-        {/* Botão de tirar outra foto */}
+        {/* Botão de tirar outra foto (reset) */}
         <button
           type="button"
-          onClick={handleTriggerPhoto}
-          disabled={!isConnected || isSending}
+          onClick={handleReset}
+          disabled={!isConnected}
           className="w-full py-3 rounded-pill bg-white/10 text-white font-semibold text-sm flex items-center justify-center gap-2 border border-white/40 hover:bg-white/20 shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <CameraIcon size={18} />

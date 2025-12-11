@@ -180,7 +180,7 @@ export const CameraFeed = forwardRef<CameraFeedHandle, CameraFeedProps>(
     }, [activeDeviceId, onErrorChange]);
 
     // Proporção visual do preview
-    const aspectClass = mode === 'portrait' ? 'aspect-[9/16]' : 'aspect-[4/3]';
+    const aspectClass = mode === 'portrait' ? 'aspect-[4/5]' : 'aspect-[4/3]';
 
     return (
       <div className="relative flex flex-col items-center w-full h-full">

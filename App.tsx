@@ -111,6 +111,11 @@ const App: React.FC = () => {
 
   const cameraRef = useRef<CameraFeedHandle | null>(null);
 
+  const handleResetToSetup = () => {
+    setCapturedPhoto(null);
+    setAppState('setup');
+  };
+
   // Canal de controle remoto
   useEffect(() => {
     if (!supabase) return;
@@ -123,7 +128,7 @@ const App: React.FC = () => {
           mode,
           timer,
         } = payload.payload as {
-          action?: 'take_photo' | 'ping' | 'set_mode' | 'set_timer';
+          action?: 'take_photo' | 'ping' | 'set_mode' | 'set_timer' | 'reset';
           mode?: FrameMode;
           timer?: 3 | 5 | 10;
         };
@@ -134,6 +139,8 @@ const App: React.FC = () => {
           setFrameMode(mode);
         } else if (action === 'set_timer' && timer) {
           setCountdownDuration(timer);
+        } else if (action === 'reset') {
+          handleResetToSetup();
         }
       });
 
@@ -222,8 +229,7 @@ const App: React.FC = () => {
   };
 
   const handleRetake = () => {
-    setCapturedPhoto(null);
-    setAppState('setup');
+    handleResetToSetup();
   };
 
   const readOverlayFile = (
