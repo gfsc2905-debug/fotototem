@@ -323,7 +323,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-globo-gradient overflow-hidden relative">
       {appState === 'countdown' && globalCountdownValue !== null && (
-        <div className="absolute inset-0 z-40 flex items-center justifycenter pointer-events-none">
+        <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none bg-black/30">
           <div className="flex flex-col items-center gap-4">
             <span className="text-xl sm:text-2xl font-semibold uppercase tracking-[0.2em] text-white/90">
               Foto em

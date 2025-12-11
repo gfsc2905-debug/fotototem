@@ -33,7 +33,6 @@ export const RemoteControl: React.FC = () => {
       return;
     }
 
-    // Limpa canal anterior, se existir
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
@@ -263,6 +262,17 @@ export const RemoteControl: React.FC = () => {
         >
           <CameraIcon size={22} />
           {isSending ? 'Enviando...' : 'Tirar Foto'}
+        </button>
+
+        {/* Botão de tirar outra foto */}
+        <button
+          type="button"
+          onClick={handleTriggerPhoto}
+          disabled={!isConnected || isSending}
+          className="w-full py-3 rounded-pill bg-white/10 text-white font-semibold text-sm flex items-center justify-center gap-2 border border-white/40 hover:bg-white/20 shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <CameraIcon size={18} />
+          Tirar outra foto
         </button>
 
         {/* Botão de ping */}
