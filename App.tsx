@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { CameraFeed } from './components/CameraFeed';
 import { ResultScreen } from './components/ResultScreen';
-import { PhotoData, AppState } from './types';
-import { Image as ImageIcon, Sparkles } from 'lucide-react';
+import { PhotoData, AppState, CameraDevice } from './types';
+import { Image as ImageIcon, Sparkles, Camera as CameraIcon, Clock, SwitchCamera } from 'lucide-react';
 import { Gallery } from './components/Gallery';
 import { supabase } from './supabaseClient';
 
@@ -72,6 +72,11 @@ const App: React.FC = () => {
   const [landscapeOverlay, setLandscapeOverlay] = useState<string | null>(null);
   const [galleryPhotos, setGalleryPhotos] = useState<PhotoData[]>([]);
   const [frameMode, setFrameMode] = useState<FrameMode>('portrait');
+
+  const [countdownDuration, setCountdownDuration] = useState<3 | 5 | 10>(3);
+  const [devices, setDevices] = useState<CameraDevice[]>([]);
+  const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   const handleCapture = (dataUrl: string) => {
     const photo: PhotoData = {
@@ -157,12 +162,29 @@ const App: React.FC = () => {
 
   const isResult = appState === 'result';
 
-  // Escolhe a moldura correta para o modo atual
   const currentOverlay = frameMode === 'portrait' ? portraitOverlay : landscapeOverlay;
+
+  const handleStartCountdown = () => {
+    if (cameraError) return;
+    if (appState === 'countdown') return;
+    setAppState('countdown');
+  };
+
+  const handleChangeDuration = (value: 3 | 5 | 10) => {
+    if (appState === 'countdown') return;
+    setCountdownDuration(value);
+  };
+
+  const handleSwitchCamera = () => {
+    if (!devices.length || !activeDeviceId) return;
+    const currentIndex = devices.findIndex((d) => d.deviceId === activeDeviceId);
+    const nextIndex = (currentIndex + 1) % devices.length;
+    setActiveDeviceId(devices[nextIndex].deviceId);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-globo-gradient overflow-hidden relative">
-      {/* Header em cima do fundo azul */}
+      {/* Header */}
       <header className="w-full px-4 sm:px-8 py-3 sm:py-4 flex justify-between items-center z-20 absolute top-0 left-0">
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="bg-white rounded-full p-1 shadow-sm">
@@ -180,7 +202,7 @@ const App: React.FC = () => {
 
         {appState === 'setup' && (
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Seletor de modo: em pé / deitado */}
+            {/* Modo */}
             <div className="flex items-center gap-1 bg-white/10 border border-white/40 rounded-pill px-2 py-1 sm:px-3 sm:py-1.5 text-[11px] sm:text-xs text-white shadow-sm">
               <span className="hidden sm:inline text-white/80 mr-1">Modo</span>
               <button
@@ -209,7 +231,7 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            {/* Upload das duas molduras */}
+            {/* Upload molduras */}
             <div className="flex flex-col sm:flex-row gap-2">
               <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white border border-white/40 px-3 sm:px-4 py-1.5 sm:py-2 rounded-pill flex items-center gap-2 transition-all text-[11px] sm:text-xs font-medium shadow-sm hover:shadow-md">
                 <ImageIcon size={14} />
@@ -241,7 +263,7 @@ const App: React.FC = () => {
         )}
       </header>
 
-      {/* Main Content */}
+      {/* Main */}
       <main className="flex-1 w-full flex flex-col">
         {isResult && capturedPhoto ? (
           <ResultScreen
@@ -251,21 +273,25 @@ const App: React.FC = () => {
           />
         ) : (
           <>
-            {/* Tela de captura 100% azul, layout preview esquerda / controles + texto direita */}
+            {/* Captura: preview à esquerda, texto+controles à direita */}
             <div className="flex-1 w-full flex items-center justify-center px-4 sm:px-6 lg:px-10 pt-20 sm:pt-24 pb-6">
               <div className="w-full max-w-7xl flex flex-col lg:flex-row items-start lg:items-center justify-center gap-8 lg:gap-12 xl:gap-16 animate-in fade-in slide-in-from-bottom-8 duration-500">
-                {/* Esquerda: Live preview grande */}
+                {/* Esquerda: preview */}
                 <div className="w-full lg:w-1/2 flex justify-center">
                   <CameraFeed
                     overlay={currentOverlay}
                     onCapture={handleCapture}
                     isCountingDown={appState === 'countdown'}
-                    setAppState={setAppState}
                     mode={frameMode}
+                    countdownDuration={countdownDuration}
+                    activeDeviceId={activeDeviceId}
+                    onDevicesChange={setDevices}
+                    onActiveDeviceChange={setActiveDeviceId}
+                    onErrorChange={setCameraError}
                   />
                 </div>
 
-                {/* Direita: texto + controles (timer, botão de foto, etc) */}
+                {/* Direita: texto + botões + timer */}
                 <div className="w-full lg:w-1/2 flex flex-col justify-center gap-6 text-white">
                   <div className="text-center lg:text-left">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/10 text-white text-xs sm:text-sm font-medium mb-3">
@@ -281,20 +307,81 @@ const App: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Controles principais abaixo do texto, alinhados à esquerda em telas grandes */}
-                  <div className="flex flex-col gap-4 text-center lg:text-left">
-                    <p className="text-xs sm:text-sm text-white/80 max-w-sm mx-auto lg:mx-0">
-                      Dica: centralize-se no quadro e aguarde a contagem regressiva antes da captura.
-                    </p>
-                    {/* Como os controles (timer, botão, troca de câmera) já estão dentro do CameraFeed,
-                        aqui mantemos apenas o texto / instrução.
-                        Se você quiser, posso mover os controles para cá em um próximo passo. */}
+                  <p className="text-xs sm:text-sm text-white/80 max-w-sm mx-auto lg:mx-0">
+                    Dica: centralize-se no quadro e aguarde a contagem regressiva antes da captura.
+                  </p>
+
+                  {/* Controles principais */}
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                      {/* Botão Tirar Foto */}
+                      <button
+                        onClick={handleStartCountdown}
+                        disabled={appState === 'countdown' || !!cameraError}
+                        className="flex-1 group relative flex items-center justify-center rounded-pill bg-white text-globo-blue shadow-lg hover:shadow-xl hover:opacity-95 transition-all disabled:opacity-60 px-8 py-3.5 sm:py-4"
+                      >
+                        <div className="flex items-center gap-3 font-semibold text-base sm:text-lg">
+                          <CameraIcon size={22} />
+                          <span>Tirar Foto</span>
+                        </div>
+                      </button>
+
+                      {/* Timer */}
+                      <div className="flex items-center gap-2 bg-white/15 rounded-pill px-3 py-1.5 shadow-sm border border-white/30">
+                        <Clock size={16} className="text-white" />
+                        <span className="text-[11px] text-white/80 mr-1 hidden sm:inline">
+                          Timer
+                        </span>
+                        <div className="flex gap-1">
+                          {[3, 5, 10].map((value) => {
+                            const v = value as 3 | 5 | 10;
+                            const isActive = countdownDuration === v;
+                            return (
+                              <button
+                                key={v}
+                                type="button"
+                                onClick={() => handleChangeDuration(v)}
+                                disabled={appState === 'countdown'}
+                                className={[
+                                  'px-2 py-1 rounded-full text-[11px] font-semibold transition-all border',
+                                  isActive
+                                    ? 'bg-white text-globo-blue border-white'
+                                    : 'bg-transparent text-white/80 border-white/30 hover:bg-white/10',
+                                  appState === 'countdown' ? 'opacity-60 cursor-not-allowed' : '',
+                                ].join(' ')}
+                              >
+                                {v}s
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botão trocar câmera */}
+                    {devices.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={handleSwitchCamera}
+                        disabled={appState === 'countdown'}
+                        className="self-start inline-flex items-center gap-2 px-4 py-2 rounded-pill bg-white/10 border border-white/40 text-white text-xs sm:text-sm font-medium hover:bg-white/20 transition-all disabled:opacity-60"
+                      >
+                        <SwitchCamera size={18} />
+                        <span>Trocar câmera</span>
+                      </button>
+                    )}
+
+                    {cameraError && (
+                      <p className="text-xs sm:text-sm text-red-100 max-w-sm">
+                        {cameraError}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Galeria sobre fundo azul (cartão branco) */}
+            {/* Galeria */}
             <div className="pb-4 sm:pb-6">
               <Gallery photos={galleryPhotos} onSelect={handleSelectFromGallery} />
             </div>
@@ -302,7 +389,6 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Footer / Barra Multicolorida */}
       <footer className="w-full h-3 sm:h-3.5 bg-multicolor-bar sticky bottom-0 z-50"></footer>
     </div>
   );
