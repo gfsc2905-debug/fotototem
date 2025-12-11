@@ -78,15 +78,19 @@ const App: React.FC = () => {
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // Largura do preview redimensionável (px), persistida em estado
-  const [previewWidth, setPreviewWidth] = useState<number>(700);
+  // Larguras independentes para em pé e deitado
+  const [portraitPreviewWidth, setPortraitPreviewWidth] = useState<number>(600);
+  const [landscapePreviewWidth, setLandscapePreviewWidth] = useState<number>(800);
+
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
   const isResizingRef = useRef(false);
+
+  // Contagem regressiva para o overlay global (mostramos o número em App)
+  const [globalCountdownValue, setGlobalCountdownValue] = useState<number | null>(null);
 
   useEffect(() => {
     const handleMouseDown = (event: MouseEvent) => {
       if (!previewContainerRef.current) return;
-      // Se o clique estiver muito perto da borda direita, consideramos que é um resize
       const rect = previewContainerRef.current.getBoundingClientRect();
       const nearRightEdge = event.clientX > rect.right - 16 && event.clientX <= rect.right + 4;
       if (nearRightEdge) {
@@ -100,7 +104,15 @@ const App: React.FC = () => {
         return;
       }
       const rect = previewContainerRef.current.getBoundingClientRect();
-      setPreviewWidth(rect.width);
+      const newWidth = rect.width;
+
+      // Salva largura de acordo com o modo atual
+      if (frameMode === 'portrait') {
+        setPortraitPreviewWidth(newWidth);
+      } else {
+        setLandscapePreviewWidth(newWidth);
+      }
+
       isResizingRef.current = false;
     };
 
@@ -111,7 +123,29 @@ const App: React.FC = () => {
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, []);
+  }, [frameMode]);
+
+  // Atualiza o valor da contagem global enquanto estiver contando
+  useEffect(() => {
+    if (appState !== 'countdown') {
+      setGlobalCountdownValue(null);
+      return;
+    }
+
+    setGlobalCountdownValue(countdownDuration);
+    const interval = setInterval(() => {
+      setGlobalCountdownValue((prev) => {
+        if (prev === null) return null;
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [appState, countdownDuration]);
 
   const handleCapture = (dataUrl: string) => {
     const photo: PhotoData = {
@@ -130,7 +164,6 @@ const App: React.FC = () => {
 
   const handleRetake = () => {
     setCapturedPhoto(null);
-    // Volta para setup mas mantém timer e tamanho como estavam
     setAppState('setup');
   };
 
@@ -208,7 +241,6 @@ const App: React.FC = () => {
 
   const handleChangeDuration = (value: 3 | 5 | 10) => {
     if (appState === 'countdown') return;
-    // Atualiza e não reseta entre capturas
     setCountdownDuration(value);
   };
 
@@ -226,8 +258,28 @@ const App: React.FC = () => {
     setActiveDeviceId(devices[nextIndex].deviceId);
   };
 
+  // Largura atual do preview conforme modo
+  const currentPreviewWidth =
+    frameMode === 'portrait' ? portraitPreviewWidth : landscapePreviewWidth;
+
   return (
     <div className="min-h-screen flex flex-col bg-globo-gradient overflow-hidden relative">
+      {/* Overlay global do timer */}
+      {appState === 'countdown' && globalCountdownValue !== null && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+          <div className="flex flex-col items-center gap-4">
+            <span className="text-xl sm:text-2xl font-semibold uppercase tracking-[0.2em] text-white/90">
+              Foto em
+            </span>
+            <div className="w-40 h-40 sm:w-52 sm:h-52 rounded-full bg-black/65 flex items-center justify-center shadow-[0_0_60px_rgba(0,0,0,0.7)] border-4 border-white/70">
+              <span className="text-6xl sm:text-7xl md:text-8xl font-bold text-white drop-shadow-[0_8px_30px_rgba(0,0,0,0.9)]">
+                {globalCountdownValue > 0 ? globalCountdownValue : '📸'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="w-full px-4 sm:px-8 py-3 sm:py-4 flex justify-between items-center z-20 absolute top-0 left-0">
         <div className="flex items-center gap-3 sm:gap-4">
@@ -326,7 +378,7 @@ const App: React.FC = () => {
                     ref={previewContainerRef}
                     className="bg-transparent"
                     style={{
-                      width: `${previewWidth}px`,
+                      width: `${currentPreviewWidth}px`,
                       maxWidth: '100%',
                       minWidth: 260,
                       resize: 'horizontal',

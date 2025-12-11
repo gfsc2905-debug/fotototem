@@ -159,7 +159,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     };
   }, [activeDeviceId, onErrorChange]);
 
-  // Contagem regressiva
+  // Contagem regressiva (só lógica; UI global fica no App)
   useEffect(() => {
     if (!isCountingDown) return;
 
@@ -202,19 +202,6 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
             alt="Frame Overlay"
             className="absolute top-0 left-0 w-full h-full object-cover z-10 pointer-events-none"
           />
-        )}
-
-        {isCountingDown && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2">
-            <span className="text-sm sm:text-base font-semibold uppercase tracking-wide text-white/90 bg-black/40 px-3 py-1 rounded-full">
-              Foto em
-            </span>
-            <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-black/60 flex items-center justify-center shadow-2xl border border-white/40">
-              <span className="text-4xl sm:text-5xl font-bold text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.7)]">
-                {countdownValue > 0 ? countdownValue : '📸'}
-              </span>
-            </div>
-          </div>
         )}
       </div>
     </div>
