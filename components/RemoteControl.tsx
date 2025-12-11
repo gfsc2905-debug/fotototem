@@ -23,6 +23,7 @@ export const RemoteControl: React.FC = () => {
       return;
     }
     setSessionCode(code);
+    setLastStatus('Conectando ao totem...');
   };
 
   useEffect(() => {
@@ -39,7 +40,7 @@ export const RemoteControl: React.FC = () => {
 
     const channel = supabase.channel(name);
 
-    const subscription = channel.subscribe((status) => {
+    channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         setIsConnected(true);
         setLastStatus(`Conectado ao totem (${sessionCode}).`);
