@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { CameraFeed, CameraFeedHandle } from './components/CameraFeed';
 import { ResultScreen } from './components/ResultScreen';
 import { PhotoData, AppState, CameraDevice } from './types';
@@ -63,12 +63,20 @@ const GloboLogo = () => (
 
 const MAX_GALLERY_ITEMS = 20;
 const BUCKET_NAME = 'fotototem';
-const CHANNEL_NAME = 'fotototem-remote-1';
 
 type FrameMode = 'portrait' | 'landscape';
 
+// Gera um código curto para identificar o totem (ex: 4 letras/números)
+const generateSessionCode = (): string => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem caracteres confusos
+  let result = '';
+  for (let i = 0; i < 4; i += 1) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+};
+
 const App: React.FC = () => {
-  // Verifica se é modo remoto pela query string (?view=remote)
   const searchParams = new URLSearchParams(window.location.search);
   const isRemoteView = searchParams.get('view') === 'remote';
 
@@ -76,6 +84,13 @@ const App: React.FC = () => {
   if (isRemoteView) {
     return <RemoteControl />;
   }
+
+  // Código de sessão do totem (fixo enquanto a página estiver aberta)
+  const [sessionCode] = useState<string>(() => generateSessionCode());
+  const channelName = useMemo(
+    () => `fotototem-remote-${sessionCode}`,
+    [sessionCode]
+  );
 
   const [appState, setAppState] = useState<AppState>('setup');
   const [capturedPhoto, setCapturedPhoto] = useState<PhotoData | null>(null);
@@ -104,13 +119,12 @@ const App: React.FC = () => {
     if (!supabase) return;
 
     const channel = supabase
-      .channel(CHANNEL_NAME)
+      .channel(channelName)
       .on('broadcast', { event: 'remote-command' }, (payload) => {
         const action = (payload.payload as { action?: string }).action;
         if (action === 'take_photo') {
           handleStartCountdown();
         }
-        // podemos ignorar outros comandos por enquanto
       })
       .subscribe();
 
@@ -118,7 +132,7 @@ const App: React.FC = () => {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cameraError, appState, countdownDuration]);
+  }, [channelName, cameraError, appState, countdownDuration]);
 
   useEffect(() => {
     const handleMouseDown = (event: MouseEvent) => {
@@ -324,10 +338,16 @@ const App: React.FC = () => {
             <span className="text-xs sm:text-sm font-medium text-white/80">
               Globo • Uso interno
             </span>
+            <span className="mt-1 text-[11px] sm:text-xs text-white/80">
+              Código do totem:{' '}
+              <span className="font-semibold tracking-[0.3em] bg-white/10 rounded-pill px-2 py-0.5">
+                {sessionCode}
+              </span>
+            </span>
           </div>
         </div>
 
-        {appState === 'setup' && (
+      {appState === 'setup' && (
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-1 bg-white/10 border border-white/40 rounded-pill px-2 py-1 sm:px-3 sm:py-1.5 text-[11px] sm:text-xs text-white shadow-sm">
               <span className="hidden sm:inline text-white/80 mr-1">Modo</span>
