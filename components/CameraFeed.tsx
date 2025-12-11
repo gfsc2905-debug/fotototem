@@ -41,11 +41,11 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     let OUTPUT_HEIGHT: number;
 
     if (mode === 'portrait') {
-      // Novo formato em pé: 1080x1920 (largura x altura)
+      // Formato em pé: 1080x1920 (largura x altura)
       OUTPUT_WIDTH = 1080;
       OUTPUT_HEIGHT = 1920;
     } else {
-      // Mantém o deitado como já estava: 1440x1080
+      // Deitado: 1440x1080
       OUTPUT_WIDTH = 1440;
       OUTPUT_HEIGHT = 1080;
     }
@@ -114,7 +114,6 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
 
         onDevicesChange(videoDevices);
 
-        // Se ainda não há câmera ativa, seleciona a primeira
         if (!activeDeviceId && videoDevices.length > 0) {
           onActiveDeviceChange(videoDevices[0].deviceId);
         }
@@ -179,7 +178,7 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
     return () => clearInterval(interval);
   }, [isCountingDown, captureImage, countdownDuration]);
 
-  // Proporção visual do preview (não precisa ser exatamente a mesma da captura, mas mantive parecido)
+  // Proporção visual do preview
   const aspectClass = mode === 'portrait' ? 'aspect-[9/16]' : 'aspect-[4/3]';
 
   return (
@@ -206,12 +205,12 @@ export const CameraFeed: React.FC<CameraFeedProps> = ({
         )}
 
         {isCountingDown && (
-          <div className="absolute top-4 right-4 z-30 flex flex-col items-center gap-1">
-            <span className="text-xs font-semibold uppercase tracking-wide text-white/80 bg-black/40 px-2 py-0.5 rounded-full">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2">
+            <span className="text-sm sm:text-base font-semibold uppercase tracking-wide text-white/90 bg-black/40 px-3 py-1 rounded-full">
               Foto em
             </span>
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/50 flex items-center justify-center shadow-lg">
-              <span className="text-3xl sm:text-4xl font-bold text-white drop-shadow-[0_3px_10px_rgba(0,0,0,0.6)]">
+            <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-black/60 flex items-center justify-center shadow-2xl border border-white/40">
+              <span className="text-4xl sm:text-5xl font-bold text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.7)]">
                 {countdownValue > 0 ? countdownValue : '📸'}
               </span>
             </div>

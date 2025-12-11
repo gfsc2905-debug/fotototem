@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { CameraFeed } from './components/CameraFeed';
 import { ResultScreen } from './components/ResultScreen';
 import { PhotoData, AppState, CameraDevice } from './types';
@@ -78,6 +78,41 @@ const App: React.FC = () => {
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
+  // Largura do preview redimensionável (px), persistida em estado
+  const [previewWidth, setPreviewWidth] = useState<number>(700);
+  const previewContainerRef = useRef<HTMLDivElement | null>(null);
+  const isResizingRef = useRef(false);
+
+  useEffect(() => {
+    const handleMouseDown = (event: MouseEvent) => {
+      if (!previewContainerRef.current) return;
+      // Se o clique estiver muito perto da borda direita, consideramos que é um resize
+      const rect = previewContainerRef.current.getBoundingClientRect();
+      const nearRightEdge = event.clientX > rect.right - 16 && event.clientX <= rect.right + 4;
+      if (nearRightEdge) {
+        isResizingRef.current = true;
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (!isResizingRef.current || !previewContainerRef.current) {
+        isResizingRef.current = false;
+        return;
+      }
+      const rect = previewContainerRef.current.getBoundingClientRect();
+      setPreviewWidth(rect.width);
+      isResizingRef.current = false;
+    };
+
+    window.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
   const handleCapture = (dataUrl: string) => {
     const photo: PhotoData = {
       dataUrl,
@@ -95,6 +130,7 @@ const App: React.FC = () => {
 
   const handleRetake = () => {
     setCapturedPhoto(null);
+    // Volta para setup mas mantém timer e tamanho como estavam
     setAppState('setup');
   };
 
@@ -172,6 +208,7 @@ const App: React.FC = () => {
 
   const handleChangeDuration = (value: 3 | 5 | 10) => {
     if (appState === 'countdown') return;
+    // Atualiza e não reseta entre capturas
     setCountdownDuration(value);
   };
 
@@ -286,11 +323,12 @@ const App: React.FC = () => {
                 {/* Esquerda: preview em container redimensionável */}
                 <div className="w-full lg:w-auto flex justify-center lg:justify-start">
                   <div
+                    ref={previewContainerRef}
                     className="bg-transparent"
                     style={{
-                      width: '100%',
-                      maxWidth: '900px',
-                      minWidth: '260px',
+                      width: `${previewWidth}px`,
+                      maxWidth: '100%',
+                      minWidth: 260,
                       resize: 'horizontal',
                       overflow: 'hidden',
                     }}
