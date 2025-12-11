@@ -66,9 +66,8 @@ const BUCKET_NAME = 'fotototem';
 
 type FrameMode = 'portrait' | 'landscape';
 
-// Gera um código curto para identificar o totem (ex: 4 letras/números)
 const generateSessionCode = (): string => {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem caracteres confusos
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let result = '';
   for (let i = 0; i < 4; i += 1) {
     result += chars[Math.floor(Math.random() * chars.length)];
@@ -80,12 +79,10 @@ const App: React.FC = () => {
   const searchParams = new URLSearchParams(window.location.search);
   const isRemoteView = searchParams.get('view') === 'remote';
 
-  // Se for controle remoto, mostra só a tela de controle
   if (isRemoteView) {
     return <RemoteControl />;
   }
 
-  // Código de sessão do totem (fixo enquanto a página estiver aberta)
   const [sessionCode] = useState<string>(() => generateSessionCode());
   const channelName = useMemo(
     () => `fotototem-remote-${sessionCode}`,
@@ -121,9 +118,22 @@ const App: React.FC = () => {
     const channel = supabase
       .channel(channelName)
       .on('broadcast', { event: 'remote-command' }, (payload) => {
-        const action = (payload.payload as { action?: string }).action;
+        const {
+          action,
+          mode,
+          timer,
+        } = payload.payload as {
+          action?: 'take_photo' | 'ping' | 'set_mode' | 'set_timer';
+          mode?: FrameMode;
+          timer?: 3 | 5 | 10;
+        };
+
         if (action === 'take_photo') {
           handleStartCountdown();
+        } else if (action === 'set_mode' && mode) {
+          setFrameMode(mode);
+        } else if (action === 'set_timer' && timer) {
+          setCountdownDuration(timer);
         }
       })
       .subscribe();
